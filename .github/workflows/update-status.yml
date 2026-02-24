@@ -32,56 +32,91 @@ jobs:
           cat << 'EOF' > generate.js
           const fs = require('fs');
 
-          const endpoints = [
+          // 1. APIエンドポイント (既存)
+          const apiEndpoints = [
             { id: 'bbs', name: '掲示板 API', url: process.env.BBS_API_URL },
             { id: 'ruruna', name: 'Ruruna AI API', url: process.env.RURUNA_API_URL },
             { id: 'support', name: '広報・サポート API', url: process.env.SUPPORT_API_URL },
             { id: 'accounts', name: 'アカウント API', url: process.env.ACCOUNTS_API_URL }
           ];
 
-          async function check() {
-            const results = [];
-            
-            for (const ep of endpoints) {
+          // 2. Webサーバーエンドポイント (新規追加)
+          const webEndpoints = [
+            { id: 'web-top', name: '総合トップサイト', url: 'https://www.heyete.com/' },
+            { id: 'web-myaccounts', name: 'MyAccounts', url: 'https://myaccounts.heyete.com/test' },
+            { id: 'web-accounts', name: 'Accounts', url: 'https://accounts.heyete.com/test' },
+            { id: 'web-ruruna', name: 'Ruruna AI', url: 'https://ruruna.heyete.com/' },
+            { id: 'web-anon', name: '24.anon', url: 'https://anon.heyete.com/' },
+            { id: 'web-news', name: 'Heyete News', url: 'https://news.heyete.com/' },
+            { id: 'web-blog', name: 'Heyete Blog', url: 'https://blog.heyete.com/' },
+            { id: 'web-dev', name: 'Heyete Developer', url: 'https://dev.heyete.com/' },
+            { id: 'web-corp', name: 'コーポレートサイト', url: 'https://corp.heyete.com/' },
+            { id: 'web-policies', name: '規約とポリシー', url: 'https://policies.heyete.com/' },
+            { id: 'web-support', name: 'サポートお問い合わせ', url: 'https://support.heyete.com/' },
+            { id: 'web-docs', name: '資料サイト', url: 'https://docs.heyete.net/' },
+            { id: 'web-anon-lite', name: '24.anon 軽量版', url: 'https://anon.heyete.net/' }
+          ];
+
+          async function checkEndpoint(ep, isApi) {
+            const start = Date.now();
+            try {
               if (!ep.url) {
-                results.push({ id: ep.id, name: ep.name, status: 'unknown', message: 'URL未設定' });
-                continue;
+                return { id: ep.id, name: ep.name, status: 'unknown', message: 'URL未設定' };
               }
+
+              // 10秒のタイムアウトを設定
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+              const options = { signal: controller.signal };
+              if (isApi) {
+                options.headers = { 
+                  "Origin": "https://support.heyete.com",
+                  "User-Agent": "Heyete Bot1.0"
+                };
+              }
+
+              const res = await fetch(ep.url, options);
+              clearTimeout(timeoutId);
               
-              const start = Date.now();
-              try {
-              
-                const res = await fetch(ep.url, { 
-                  headers: { 
-                    "Origin": "https://support.heyete.com",
-                    "User-Agent": "Heyete Bot1.0"
-                  } 
-                });
-                const latency = Date.now() - start;
-                
-                if (res.ok) {
+              const latency = Date.now() - start;
+
+              if (res.ok) {
+                let status = 'operational';
+                let details = null;
+
+                // APIの場合はJSONの中身までチェック
+                if (isApi) {
                   const data = await res.json().catch(() => ({}));
                   const hasDepError = data.dependencies && Object.values(data.dependencies).some(v => String(v).includes('failed') || String(v).includes('error'));
-                  
-                  results.push({
-                    id: ep.id,
-                    name: ep.name,
-                    status: hasDepError ? 'degraded' : 'operational',
-                    latency_ms: latency,
-                    details: data
-                  });
-                } else {
-                  results.push({ id: ep.id, name: ep.name, status: 'down', code: res.status, latency_ms: latency });
+                  if (hasDepError) status = 'degraded';
+                  details = data;
                 }
-              } catch (err) {
-                results.push({ id: ep.id, name: ep.name, status: 'down', error: err.message });
+
+                return { id: ep.id, name: ep.name, status, latency_ms: latency, details };
+              } else {
+                return { id: ep.id, name: ep.name, status: 'down', code: res.status, latency_ms: latency };
               }
+            } catch (err) {
+              return { id: ep.id, name: ep.name, status: 'down', error: err.message };
             }
+          }
+
+          async function check() {
+            const apiResults = [];
+            const webResults = [];
+
+            for (const ep of apiEndpoints) apiResults.push(await checkEndpoint(ep, true));
+            for (const ep of webEndpoints) webResults.push(await checkEndpoint(ep, false));
             
+            const allResults = [...apiResults, ...webResults];
+            const isAllOk = allResults.every(r => r.status === 'operational' || r.status === 'unknown');
+
             const output = {
               last_updated: new Date().toISOString(),
-              system_status: results.every(r => r.status === 'operational') ? 'all_systems_operational' : 'partial_outage',
-              services: results
+              system_status: isAllOk ? 'all_systems_operational' : 'partial_outage',
+              api_services: apiResults,
+              web_services: webResults
             };
             
             if (!fs.existsSync('public')) fs.mkdirSync('public');
