@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ] # ご自身のブランチ名に合わせてください（masterの場合は書き換え）
     paths-ignore:
-      - 'public/status.json' # status.jsonの更新では再ビルドしない
+      - 'status.json' # status.jsonの更新では再ビルドしない
   workflow_dispatch:
 
 permissions:
