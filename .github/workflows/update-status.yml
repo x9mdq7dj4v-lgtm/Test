@@ -50,11 +50,11 @@ jobs:
               
               const start = Date.now();
               try {
-                // ★ Origin と独自の User-Agent をしっかり指定
+              
                 const res = await fetch(ep.url, { 
                   headers: { 
                     "Origin": "https://support.heyete.com",
-                    "User-Agent": "Heyete-Status-Monitor/1.0 (GitHub Actions)"
+                    "User-Agent": "Heyete Bot1.0"
                   } 
                 });
                 const latency = Date.now() - start;
