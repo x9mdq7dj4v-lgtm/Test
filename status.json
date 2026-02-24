@@ -1,0 +1,30 @@
+{
+  "last_updated": "2026-02-24T10:46:51.207Z",
+  "system_status": "partial_outage",
+  "services": [
+    {
+      "id": "bbs",
+      "name": "掲示板 API",
+      "status": "unknown",
+      "message": "URL未設定"
+    },
+    {
+      "id": "ruruna",
+      "name": "Ruruna AI API",
+      "status": "unknown",
+      "message": "URL未設定"
+    },
+    {
+      "id": "support",
+      "name": "広報・サポート API",
+      "status": "unknown",
+      "message": "URL未設定"
+    },
+    {
+      "id": "accounts",
+      "name": "アカウント API",
+      "status": "unknown",
+      "message": "URL未設定"
+    }
+  ]
+}
