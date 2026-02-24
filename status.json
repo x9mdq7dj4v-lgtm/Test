@@ -1,34 +1,62 @@
 {
-  "last_updated": "2026-02-24T10:51:50.283Z",
-  "system_status": "partial_outage",
+  "last_updated": "2026-02-24T10:54:58.238Z",
+  "system_status": "all_systems_operational",
   "services": [
     {
       "id": "bbs",
       "name": "掲示板 API",
-      "status": "down",
-      "code": 403,
-      "latency_ms": 346
+      "status": "operational",
+      "latency_ms": 243,
+      "details": {
+        "success": true,
+        "status": "ok",
+        "timestamp": 1771930497,
+        "dependencies": {
+          "kv": "ok"
+        }
+      }
     },
     {
       "id": "ruruna",
       "name": "Ruruna AI API",
-      "status": "down",
-      "code": 403,
-      "latency_ms": 86
+      "status": "operational",
+      "latency_ms": 145,
+      "details": {
+        "status": "ok",
+        "timestamp": 1771930497214,
+        "dependencies": {
+          "kv": "ok",
+          "ai": "ok"
+        }
+      }
     },
     {
       "id": "support",
       "name": "広報・サポート API",
-      "status": "down",
-      "code": 403,
-      "latency_ms": 116
+      "status": "operational",
+      "latency_ms": 197,
+      "details": {
+        "status": "ok",
+        "timestamp": 1771930497418,
+        "dependencies": {
+          "kv": "ok",
+          "resend": "ready"
+        }
+      }
     },
     {
       "id": "accounts",
       "name": "アカウント API",
-      "status": "down",
-      "code": 403,
-      "latency_ms": 136
+      "status": "operational",
+      "latency_ms": 721,
+      "details": {
+        "status": "ok",
+        "timestamp": 1771930497685,
+        "dependencies": {
+          "db": "ok",
+          "session_kv": "ok"
+        }
+      }
     }
   ]
 }
