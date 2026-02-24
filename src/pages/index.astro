@@ -13,8 +13,7 @@ import Layout from '../layouts/Layout.astro';
 <script>
   async function loadStatus() {
     try {
-      const rawUrl = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/status.json';
-      const response = await fetch(`${rawUrl}?t=${new Date().getTime()}`);
+      const response = await fetch('/status.json?' + new Date().getTime()); // キャッシュ対策
       if (!response.ok) throw new Error('Failed to fetch status');
       
       const data = await response.json();
