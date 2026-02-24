@@ -58,51 +58,70 @@ jobs:
           ];
 
           async function checkEndpoint(ep, isApi) {
-            const start = Date.now();
-            try {
-              if (!ep.url) {
-                return { id: ep.id, name: ep.name, status: 'unknown', message: 'URL未設定' };
-              }
+            const maxRetries = 1;      // 最大リトライ回数 (最初の1回 + リトライ1回 = 計2回)
+            const retryDelayMs = 5000; // リトライ前の待機時間 (5秒)
 
-              // 10秒のタイムアウトを設定
-              const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-              // 共通のヘッダー設定（API/WebどちらもUAを指定）
-              const options = { 
-                signal: controller.signal,
-                headers: {
-                  "User-Agent": "HeyeteBot"
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+              const start = Date.now();
+              try {
+                if (!ep.url) {
+                  return { id: ep.id, name: ep.name, status: 'unknown', message: 'URL未設定' };
                 }
-              };
 
-              // APIの場合のみOriginヘッダーを追加
-              if (isApi) {
-                options.headers["Origin"] = "https://support.heyete.com";
-              }
+                // 10秒のタイムアウトを設定
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-              const res = await fetch(ep.url, options);
-              clearTimeout(timeoutId);
-              
-              const latency = Date.now() - start;
-
-              if (res.ok) {
-                let status = 'operational';
-                let details = null;
+                const options = { 
+                  signal: controller.signal,
+                  headers: {
+                    "User-Agent": "HeyeteBot"
+                  }
+                };
 
                 if (isApi) {
-                  const data = await res.json().catch(() => ({}));
-                  const hasDepError = data.dependencies && Object.values(data.dependencies).some(v => String(v).includes('failed') || String(v).includes('error'));
-                  if (hasDepError) status = 'degraded';
-                  details = data;
+                  options.headers["Origin"] = "https://support.heyete.com";
                 }
 
-                return { id: ep.id, name: ep.name, status, latency_ms: latency, details };
-              } else {
-                return { id: ep.id, name: ep.name, status: 'down', code: res.status, latency_ms: latency };
+                const res = await fetch(ep.url, options);
+                clearTimeout(timeoutId);
+                
+                const latency = Date.now() - start;
+
+                if (res.ok) {
+                  let status = 'operational';
+                  let details = null;
+
+                  if (isApi) {
+                    const data = await res.json().catch(() => ({}));
+                    const hasDepError = data.dependencies && Object.values(data.dependencies).some(v => String(v).includes('failed') || String(v).includes('error'));
+                    if (hasDepError) status = 'degraded';
+                    details = data;
+                  }
+
+                  // 正常 (operational) なら、ループを抜けて即座に結果を返す
+                  if (status === 'operational') {
+                    return { id: ep.id, name: ep.name, status, latency_ms: latency, details };
+                  } else if (attempt === maxRetries) {
+                    // APIの依存エラー等(degraded)で、最後の試行だった場合はその結果を返す
+                    return { id: ep.id, name: ep.name, status, latency_ms: latency, details };
+                  }
+                } else {
+                  // 200以外で、最後の試行だった場合はダウンとして返す
+                  if (attempt === maxRetries) {
+                    return { id: ep.id, name: ep.name, status: 'down', code: res.status, latency_ms: latency };
+                  }
+                }
+              } catch (err) {
+                // ネットワークエラー等で、最後の試行だった場合はダウンとして返す
+                if (attempt === maxRetries) {
+                  return { id: ep.id, name: ep.name, status: 'down', error: err.message };
+                }
               }
-            } catch (err) {
-              return { id: ep.id, name: ep.name, status: 'down', error: err.message };
+
+              // 正常でない（エラー、HTTPステータス異常、またはdegraded）場合は待機してリトライ
+              console.log(`[警告] ${ep.name} のチェックに失敗しました。${retryDelayMs / 1000}秒後にリトライします... (試行: ${attempt + 1}/${maxRetries + 1})`);
+              await new Promise(resolve => setTimeout(resolve, retryDelayMs));
             }
           }
 
@@ -110,8 +129,14 @@ jobs:
             const apiResults = [];
             const webResults = [];
 
-            for (const ep of apiEndpoints) apiResults.push(await checkEndpoint(ep, true));
-            for (const ep of webEndpoints) webResults.push(await checkEndpoint(ep, false));
+            // APIのチェック
+            for (const ep of apiEndpoints) {
+              apiResults.push(await checkEndpoint(ep, true));
+            }
+            // Webのチェック
+            for (const ep of webEndpoints) {
+              webResults.push(await checkEndpoint(ep, false));
+            }
             
             const allResults = [...apiResults, ...webResults];
             const isAllOk = allResults.every(r => r.status === 'operational' || r.status === 'unknown');
