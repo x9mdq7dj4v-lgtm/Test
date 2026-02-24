@@ -1,0 +1,154 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Heyete System Status">
+  <div class="status-wrapper">
+    <div id="loading" class="loading">システムステータスを確認中...</div>
+    <div id="status-content" style="display: none;">
+      </div>
+  </div>
+</Layout>
+
+<script>
+  // クライアントサイドで定期的にステータスを取得する処理
+  async function loadStatus() {
+    try {
+      // public/ ディレクトリに配置されたJSONを読み込む
+      const response = await fetch('/status.json?' + new Date().getTime()); // キャッシュ対策
+      if (!response.ok) throw new Error('Failed to fetch status');
+      
+      const data = await response.json();
+      renderStatus(data);
+    } catch (error) {
+      document.getElementById('loading')!.innerHTML = '⚠️ ステータス情報の取得に失敗しました。';
+      console.error(error);
+    }
+  }
+
+  function renderStatus(data: any) {
+    const container = document.getElementById('status-content')!;
+    const loading = document.getElementById('loading')!;
+    
+    // 全体ステータスの判定
+    const isAllOk = data.system_status === 'all_systems_operational';
+    const overallClass = isAllOk ? 'status-ok' : 'status-warning';
+    const overallText = isAllOk ? '✅ 全てのシステムが正常に稼働しています' : '⚠️ 一部のシステムに問題が発生しています';
+    
+    const updatedAt = new Date(data.last_updated).toLocaleString('ja-JP');
+
+    let html = `
+      <div class="overall-banner ${overallClass}">
+        <h2>${overallText}</h2>
+        <p class="update-time">最終更新: ${updatedAt}</p>
+      </div>
+      <div class="service-list">
+    `;
+
+    // 各サービスのステータス描画
+    data.services.forEach((service: any) => {
+      let icon = '🟢';
+      let statusText = '稼働中';
+      let rowClass = 'row-ok';
+
+      if (service.status === 'degraded') {
+        icon = '🟡';
+        statusText = '警告・遅延';
+        rowClass = 'row-warn';
+      } else if (service.status === 'down') {
+        icon = '🔴';
+        statusText = '停止中';
+        rowClass = 'row-down';
+      } else if (service.status === 'unknown') {
+        icon = '⚪';
+        statusText = '不明';
+        rowClass = 'row-unknown';
+      }
+
+      html += `
+        <div class="service-row ${rowClass}">
+          <div class="service-name">${service.name}</div>
+          <div class="service-status">
+            ${icon} <span class="status-label">${statusText}</span>
+            <span class="latency">(${service.latency_ms || 0} ms)</span>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    
+    container.innerHTML = html;
+    loading.style.display = 'none';
+    container.style.display = 'block';
+  }
+
+  // 初回読み込みと、1分ごとの自動更新
+  loadStatus();
+  setInterval(loadStatus, 60000);
+</script>
+
+<style>
+  .status-wrapper {
+    margin-top: 2rem;
+  }
+  .loading {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
+  }
+  .overall-banner {
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+  .overall-banner h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+  }
+  .update-time {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+  }
+  .status-ok {
+    background-color: #e6f4ea;
+    color: #137333;
+  }
+  .status-warning {
+    background-color: #fef7e0;
+    color: #b06000;
+  }
+  
+  .service-list {
+    background: #fff;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .service-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #eaeaea;
+  }
+  .service-row:last-child {
+    border-bottom: none;
+  }
+  .service-name {
+    font-weight: 500;
+    font-size: 1.1rem;
+  }
+  .service-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .latency {
+    color: #888;
+    font-size: 0.85rem;
+    min-width: 60px;
+    text-align: right;
+  }
+</style>
