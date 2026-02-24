@@ -12,6 +12,7 @@ permissions:
 jobs:
   generate-status:
     runs-on: ubuntu-latest
+    environment: mine
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
