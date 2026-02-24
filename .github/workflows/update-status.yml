@@ -42,19 +42,19 @@ jobs:
 
           // 2. Webサーバーエンドポイント
           const webEndpoints = [
-            { id: 'web-top', name: '総合トップサイト', url: 'https://www.heyete.com/' },
+            { id: 'web-top', name: '総合トップサイト', url: 'https://www.heyete.com/test' },
             { id: 'web-myaccounts', name: 'MyAccounts', url: 'https://myaccount.heyete.com/test' },
             { id: 'web-accounts', name: 'Accounts', url: 'https://accounts.heyete.com/test' },
-            { id: 'web-ruruna', name: 'Ruruna AI', url: 'https://ruruna.heyete.com/' },
-            { id: 'web-anon', name: '24.anon', url: 'https://anon.heyete.com/' },
-            { id: 'web-news', name: 'Heyete News', url: 'https://news.heyete.com/' },
-            { id: 'web-blog', name: 'Heyete Blog', url: 'https://blog.heyete.com/' },
-            { id: 'web-dev', name: 'Heyete Developer', url: 'https://dev.heyete.com/' },
-            { id: 'web-corp', name: 'コーポレートサイト', url: 'https://corp.heyete.com/' },
-            { id: 'web-policies', name: '規約とポリシー', url: 'https://policies.heyete.com/' },
-            { id: 'web-support', name: 'サポートお問い合わせ', url: 'https://support.heyete.com/' },
-            { id: 'web-docs', name: '資料サイト', url: 'https://docs.heyete.net/' },
-            { id: 'web-anon-lite', name: '24.anon 軽量版', url: 'https://anon.heyete.net/' }
+            { id: 'web-ruruna', name: 'Ruruna AI', url: 'https://ruruna.heyete.com/test' },
+            { id: 'web-anon', name: '24.anon', url: 'https://anon.heyete.com/test' },
+            { id: 'web-news', name: 'Heyete News', url: 'https://news.heyete.com/test' },
+            { id: 'web-blog', name: 'Heyete Blog', url: 'https://blog.heyete.com/test' },
+            { id: 'web-dev', name: 'Heyete Developer', url: 'https://dev.heyete.com/test' },
+            { id: 'web-corp', name: 'コーポレートサイト', url: 'https://corp.heyete.com/test' },
+            { id: 'web-policies', name: '規約とポリシー', url: 'https://policies.heyete.com/test' },
+            { id: 'web-support', name: 'サポートお問い合わせ', url: 'https://support.heyete.com/test' },
+            { id: 'web-docs', name: '資料サイト', url: 'https://docs.heyete.net/test' },
+            { id: 'web-anon-lite', name: '24.anon 軽量版', url: 'https://anon.heyete.net/test' }
           ];
 
           async function checkEndpoint(ep, isApi) {
