@@ -43,7 +43,7 @@ jobs:
           // 2. Webサーバーエンドポイント
           const webEndpoints = [
             { id: 'web-top', name: '総合トップサイト', url: 'https://www.heyete.com/' },
-            { id: 'web-myaccounts', name: 'MyAccounts', url: 'https://myaccounts.heyete.com/test' },
+            { id: 'web-myaccounts', name: 'MyAccounts', url: 'https://myaccount.heyete.com/test' },
             { id: 'web-accounts', name: 'Accounts', url: 'https://accounts.heyete.com/test' },
             { id: 'web-ruruna', name: 'Ruruna AI', url: 'https://ruruna.heyete.com/' },
             { id: 'web-anon', name: '24.anon', url: 'https://anon.heyete.com/' },
