@@ -32,7 +32,7 @@ jobs:
           cat << 'EOF' > generate.js
           const fs = require('fs');
 
-          // 1. APIエンドポイント (既存)
+          // 1. APIエンドポイント
           const apiEndpoints = [
             { id: 'bbs', name: '掲示板 API', url: process.env.BBS_API_URL },
             { id: 'ruruna', name: 'Ruruna AI API', url: process.env.RURUNA_API_URL },
@@ -40,7 +40,7 @@ jobs:
             { id: 'accounts', name: 'アカウント API', url: process.env.ACCOUNTS_API_URL }
           ];
 
-          // 2. Webサーバーエンドポイント (新規追加)
+          // 2. Webサーバーエンドポイント
           const webEndpoints = [
             { id: 'web-top', name: '総合トップサイト', url: 'https://www.heyete.com/' },
             { id: 'web-myaccounts', name: 'MyAccounts', url: 'https://myaccounts.heyete.com/test' },
@@ -85,7 +85,6 @@ jobs:
                 let status = 'operational';
                 let details = null;
 
-                // APIの場合はJSONの中身までチェック
                 if (isApi) {
                   const data = await res.json().catch(() => ({}));
                   const hasDepError = data.dependencies && Object.values(data.dependencies).some(v => String(v).includes('failed') || String(v).includes('error'));
@@ -119,8 +118,8 @@ jobs:
               web_services: webResults
             };
             
-            if (!fs.existsSync('public')) fs.mkdirSync('public');
-            fs.writeFileSync('public/status.json', JSON.stringify(output, null, 2));
+            // 【修正箇所】 publicディレクトリを作らず、直接ルートの status.json に書き込む
+            fs.writeFileSync('status.json', JSON.stringify(output, null, 2));
             console.log("status.json generated successfully.");
           }
           
