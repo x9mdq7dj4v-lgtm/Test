@@ -1,0 +1,101 @@
+name: Update API Status JSON
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # 手動実行用
+
+# リポジトリに変更をPushするための権限
+permissions:
+  contents: write
+
+jobs:
+  generate-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch Health and Generate status.json
+        env:
+          BBS_API_URL: ${{ secrets.BBS_API_URL }}
+          RURUNA_API_URL: ${{ secrets.RURUNA_API_URL }}
+          SUPPORT_API_URL: ${{ secrets.SUPPORT_API_URL }}
+          ACCOUNTS_API_URL: ${{ secrets.ACCOUNTS_API_URL }}
+        run: |
+          # Node.jsスクリプトを一時ファイルとして作成して実行
+          cat << 'EOF' > generate.js
+          const fs = require('fs');
+
+          const endpoints = [
+            { id: 'bbs', name: '掲示板 API', url: process.env.BBS_API_URL },
+            { id: 'ruruna', name: 'Ruruna AI API', url: process.env.RURUNA_API_URL },
+            { id: 'support', name: '広報・サポート API', url: process.env.SUPPORT_API_URL },
+            { id: 'accounts', name: 'アカウント API', url: process.env.ACCOUNTS_API_URL }
+          ];
+
+          async function check() {
+            const results = [];
+            
+            for (const ep of endpoints) {
+              if (!ep.url) {
+                results.push({ id: ep.id, name: ep.name, status: 'unknown', message: 'URL未設定' });
+                continue;
+              }
+              
+              const start = Date.now();
+              try {
+                // CORS制限を回避するためにOriginを付与
+                const res = await fetch(ep.url, { headers: { "Origin": "https://support.heyete.com" } });
+                const latency = Date.now() - start;
+                
+                if (res.ok) {
+                  const data = await res.json().catch(() => ({}));
+                  // 依存関係（DBやKV）のエラーがあれば警告ステータスにする判定
+                  const hasDepError = data.dependencies && Object.values(data.dependencies).some(v => String(v).includes('failed') || String(v).includes('error'));
+                  
+                  results.push({
+                    id: ep.id,
+                    name: ep.name,
+                    status: hasDepError ? 'degraded' : 'operational',
+                    latency_ms: latency,
+                    details: data
+                  });
+                } else {
+                  results.push({ id: ep.id, name: ep.name, status: 'down', code: res.status, latency_ms: latency });
+                }
+              } catch (err) {
+                results.push({ id: ep.id, name: ep.name, status: 'down', error: err.message });
+              }
+            }
+            
+            // 最終的なJSONの構造
+            const output = {
+              last_updated: new Date().toISOString(),
+              system_status: results.every(r => r.status === 'operational') ? 'all_systems_operational' : 'partial_outage',
+              services: results
+            };
+            
+            // JSONファイルとして書き出し
+            fs.writeFileSync('status.json', JSON.stringify(output, null, 2));
+            console.log("status.json generated successfully.");
+          }
+          
+          check();
+          EOF
+          
+          node generate.js
+
+      - name: Commit and Push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add status.json
+          
+          # 差分がある場合のみコミットする（エラー回避のため）
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update system status [skip ci]" && git push)
