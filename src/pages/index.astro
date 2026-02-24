@@ -15,7 +15,8 @@ import Layout from '../layouts/Layout.astro';
   async function loadStatus() {
     try {
       // public/ ディレクトリに配置されたJSONを読み込む
-      const response = await fetch('/status.json?' + new Date().getTime()); // キャッシュ対策
+      const rawUrl = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/public/status.json';
+      const response = await fetch(`${rawUrl}?t=${new Date().getTime()}`);
       if (!response.ok) throw new Error('Failed to fetch status');
       
       const data = await response.json();
