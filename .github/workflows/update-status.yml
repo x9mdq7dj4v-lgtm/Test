@@ -84,7 +84,8 @@ jobs:
               services: results
             };
             
-            fs.writeFileSync('status.json', JSON.stringify(output, null, 2));
+            if (!fs.existsSync('public')) fs.mkdirSync('public');
+            fs.writeFileSync('public/status.json', JSON.stringify(output, null, 2));
             console.log("status.json generated successfully.");
           }
           
