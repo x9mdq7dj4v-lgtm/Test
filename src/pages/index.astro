@@ -11,10 +11,8 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
-  // クライアントサイドで定期的にステータスを取得する処理
   async function loadStatus() {
     try {
-      // public/ ディレクトリに配置されたJSONを読み込む
       const rawUrl = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/status.json';
       const response = await fetch(`${rawUrl}?t=${new Date().getTime()}`);
       if (!response.ok) throw new Error('Failed to fetch status');
@@ -27,27 +25,12 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
-  function renderStatus(data: any) {
-    const container = document.getElementById('status-content')!;
-    const loading = document.getElementById('loading')!;
+  // サービスリストのHTMLを生成するヘルパー関数
+  function generateServiceGroupHTML(title: string, services: any[]) {
+    let html = `<h3 class="group-title">${title}</h3>`;
+    html += `<div class="service-list">`;
     
-    // 全体ステータスの判定
-    const isAllOk = data.system_status === 'all_systems_operational';
-    const overallClass = isAllOk ? 'status-ok' : 'status-warning';
-    const overallText = isAllOk ? '✅ 全てのシステムが正常に稼働しています' : '⚠️ 一部のシステムに問題が発生しています';
-    
-    const updatedAt = new Date(data.last_updated).toLocaleString('ja-JP');
-
-    let html = `
-      <div class="overall-banner ${overallClass}">
-        <h2>${overallText}</h2>
-        <p class="update-time">最終更新: ${updatedAt}</p>
-      </div>
-      <div class="service-list">
-    `;
-
-    // 各サービスのステータス描画
-    data.services.forEach((service: any) => {
+    services.forEach((service: any) => {
       let icon = '🟢';
       let statusText = '稼働中';
       let rowClass = 'row-ok';
@@ -76,15 +59,42 @@ import Layout from '../layouts/Layout.astro';
         </div>
       `;
     });
-
-    html += `</div>`;
     
+    html += `</div>`;
+    return html;
+  }
+
+  function renderStatus(data: any) {
+    const container = document.getElementById('status-content')!;
+    const loading = document.getElementById('loading')!;
+    
+    // 全体ステータスの判定
+    const isAllOk = data.system_status === 'all_systems_operational';
+    const overallClass = isAllOk ? 'status-ok' : 'status-warning';
+    const overallText = isAllOk ? '✅ 全てのシステムが正常に稼働しています' : '⚠️ 一部のシステムに問題が発生しています';
+    
+    const updatedAt = new Date(data.last_updated).toLocaleString('ja-JP');
+    
+    let html = `
+      <div class="overall-banner ${overallClass}">
+        <h2>${overallText}</h2>
+        <p class="update-time">最終更新: ${updatedAt}</p>
+      </div>
+    `;
+
+    // APIとWebのグループをそれぞれ描画
+    if (data.api_services && data.api_services.length > 0) {
+      html += generateServiceGroupHTML('APIサービス', data.api_services);
+    }
+    if (data.web_services && data.web_services.length > 0) {
+      html += generateServiceGroupHTML('Webサービス', data.web_services);
+    }
+
     container.innerHTML = html;
     loading.style.display = 'none';
     container.style.display = 'block';
   }
 
-  // 初回読み込みと、1分ごとの自動更新
   loadStatus();
   setInterval(loadStatus, 60000);
 </script>
@@ -122,11 +132,20 @@ import Layout from '../layouts/Layout.astro';
     color: #b06000;
   }
   
+  .group-title {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    margin: 2rem 0 1rem 0;
+    padding-left: 0.5rem;
+    border-left: 4px solid #0056b3;
+  }
+
   .service-list {
     background: #fff;
     border: 1px solid #eaeaea;
     border-radius: 8px;
     overflow: hidden;
+    margin-bottom: 2rem;
   }
   .service-row {
     display: flex;
