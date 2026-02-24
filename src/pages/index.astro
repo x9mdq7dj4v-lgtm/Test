@@ -13,9 +13,15 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
-  // Cookieの操作用ヘルパー関数
+  // SVGアイコンの定義
+  const icons = {
+    ok: `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+    warn: `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+    down: `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
+    unknown: `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
+  };
+
   function setHeyeteCookie(name: string, value: string, maxAgeSeconds: number) {
-    // ご指定のドメインと厳格なセキュリティ設定
     const domain = "backup-status.heyete.net";
     const options = `max-age=${maxAgeSeconds}; domain=${domain}; path=/; samesite=strict; secure`;
     document.cookie = `${name}=${encodeURIComponent(value)}; ${options}`;
@@ -32,18 +38,16 @@ import Layout from '../layouts/Layout.astro';
     const dataCookie = 'h_provisional-lol';
     const now = Date.now();
 
-    // 1. Cookieからアクセス時刻を取得し、30秒以内かチェック
     const cachedTimeStr = getHeyeteCookie(timeCookie);
     if (cachedTimeStr) {
       const cachedTime = parseInt(cachedTimeStr, 10);
-      if (now - cachedTime < 30000) { // 30秒以内
+      if (now - cachedTime < 30000) {
         const cachedDataStr = getHeyeteCookie(dataCookie);
         if (cachedDataStr) {
           try {
             const data = JSON.parse(cachedDataStr);
-            console.log("Cookieからキャッシュされたデータを読み込みました");
             renderStatus(data);
-            return; // APIアクセスをスキップ
+            return; 
           } catch(e) {
             console.error('キャッシュデータのパースに失敗しました', e);
           }
@@ -51,16 +55,12 @@ import Layout from '../layouts/Layout.astro';
       }
     }
 
-    // 2. キャッシュがない、または30秒以上経過している場合はAPIから取得
     try {
-      console.log("APIから最新データを取得しています...");
       const rawUrl = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/status.json';
       const response = await fetch(`${rawUrl}?t=${new Date().getTime()}`);
-      
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
 
-      // 3. Cookieに保存 (有効期限は60秒)
       setHeyeteCookie(timeCookie, now.toString(), 60);
       setHeyeteCookie(dataCookie, JSON.stringify(data), 60);
 
@@ -82,29 +82,33 @@ import Layout from '../layouts/Layout.astro';
     `;
     
     services.forEach((service: any) => {
-      let statusClass = 'status-dot-ok';
+      let icon = icons.ok;
       let statusText = '稼働中';
+      let statusColor = 'status-ok';
 
       if (service.status === 'degraded') {
-        statusClass = 'status-dot-warn';
+        icon = icons.warn;
         statusText = '警告・遅延';
+        statusColor = 'status-warn';
       } else if (service.status === 'down') {
-        statusClass = 'status-dot-down';
+        icon = icons.down;
         statusText = '停止中';
+        statusColor = 'status-down';
       } else if (service.status === 'unknown') {
-        statusClass = 'status-dot-unknown';
+        icon = icons.unknown;
         statusText = '不明';
+        statusColor = 'status-unknown';
       }
 
       html += `
         <div class="service-row">
-          <div class="service-info">
-            <span class="service-name">${service.name}</span>
-          </div>
-          <div class="service-status">
+          <div class="service-name">${service.name}</div>
+          <div class="service-details">
             <span class="latency">${service.latency_ms || 0} ms</span>
-            <span class="${statusClass}"></span>
-            <span class="status-label">${statusText}</span>
+            <div class="status-badge ${statusColor}">
+              ${icon}
+              <span>${statusText}</span>
+            </div>
           </div>
         </div>
       `;
@@ -121,6 +125,7 @@ import Layout from '../layouts/Layout.astro';
     const isAllOk = data.system_status === 'all_systems_operational';
     const overallClass = isAllOk ? 'banner-ok' : 'banner-warning';
     const overallText = isAllOk ? 'すべてのシステムが正常に稼働しています' : '一部のシステムに問題が発生しています';
+    const overallIcon = isAllOk ? icons.ok : icons.warn;
     
     const updatedAt = new Date(data.last_updated).toLocaleString('ja-JP', {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -128,7 +133,8 @@ import Layout from '../layouts/Layout.astro';
 
     let html = `
       <div class="overall-banner ${overallClass}">
-        <div class="banner-icon">${isAllOk ? 'SF' : '⚠️'}</div> <div class="banner-text">
+        <div class="banner-icon">${overallIcon}</div>
+        <div class="banner-text">
           <h2>${overallText}</h2>
           <p class="update-time">最終更新: ${updatedAt}</p>
         </div>
@@ -145,174 +151,136 @@ import Layout from '../layouts/Layout.astro';
     container.innerHTML = html;
     loading.style.display = 'none';
     container.style.display = 'block';
-
-    container.style.animation = 'fadeIn 0.6s ease-out forwards';
   }
 
-  // 初回読み込みと60秒ごとの定期チェック（Cookieの有効期限に合わせる）
   loadStatus();
   setInterval(loadStatus, 60000);
 </script>
 
-<style>
-
-  :root {
-    --bg-color: #f5f5f7;
-    --card-bg: rgba(255, 255, 255, 0.8);
-    --text-main: #1d1d1f;
-    --text-sub: #86868b;
-    --border-color: rgba(0, 0, 0, 0.08);
-    --green: #34c759;
-    --yellow: #ffcc00;
-    --red: #ff3b30;
-    --gray: #8e8e93;
-  }
-
-
+<style is:global>
+  /* 全体レイアウト */
   .status-wrapper {
-    max-width: 860px;
-    margin: 3rem auto;
-    padding: 0 1.5rem;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, sans-serif;
-    color: var(--text-main);
+    max-width: 800px;
+    margin: 2rem auto;
   }
 
-  /* ローディング表示 */
+  /* ローディング */
   .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 5rem 0;
-    color: var(--text-sub);
+    text-align: center;
+    padding: 4rem 0;
+    color: #666;
   }
   .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border-color);
-    border-top-color: var(--text-sub);
+    width: 30px; height: 30px;
+    border: 3px solid #e5e5ea;
+    border-top-color: #8e8e93;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
+    margin: 0 auto 1rem auto;
   }
   @keyframes spin { 100% { transform: rotate(360deg); } }
 
-
+  /* 全体バナー */
   .overall-banner {
     display: flex;
     align-items: center;
-    padding: 1.5rem 2rem;
-    border-radius: 18px;
-    margin-bottom: 3rem;
-    background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   }
   .banner-ok {
-    border-left: 6px solid var(--green);
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
   }
   .banner-warning {
-    border-left: 6px solid var(--yellow);
+    background-color: #fefce8;
+    border: 1px solid #fef08a;
   }
-  .banner-icon {
-    font-size: 2rem;
-    margin-right: 1.5rem;
+  .banner-icon svg {
+    width: 40px;
+    height: 40px;
+    margin-right: 1.2rem;
   }
-  .banner-ok .banner-icon {
-    color: var(--green);
-
-  }
+  .banner-ok .banner-icon svg { color: #16a34a; }
+  .banner-warning .banner-icon svg { color: #ca8a04; }
+  
   .banner-text h2 {
-    margin: 0 0 0.3rem 0;
-    font-size: 1.3rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    margin: 0 0 0.2rem 0;
+    font-size: 1.25rem;
   }
   .update-time {
     margin: 0;
     font-size: 0.85rem;
-    color: var(--text-sub);
+    color: #666;
   }
 
-
+  /* サービスグループとリスト（隙間と見やすさを確保） */
   .service-group {
     margin-bottom: 2.5rem;
   }
   .group-title {
     font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-main);
-    margin: 0 0 1rem 1rem;
-    letter-spacing: -0.01em;
+    margin-bottom: 1rem;
+    padding-left: 0.5rem;
+    border-left: 4px solid #0056b3;
+    color: #333;
   }
 
-  /* リストカードデザイン */
   .service-list {
-    background: var(--card-bg);
-    border-radius: 18px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
-    overflow: hidden;
-    border: 1px solid var(--border-color);
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid #eaeaea;
   }
+  
   .service-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.2rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-    transition: background-color 0.2s ease;
+    padding: 1.2rem 1.5rem; /* しっかり隙間をとる */
+    border-bottom: 1px solid #eaeaea;
   }
   .service-row:last-child {
     border-bottom: none;
   }
-  .service-row:hover {
-    background-color: rgba(0, 0, 0, 0.01);
-  }
-  
   .service-name {
     font-weight: 500;
-    font-size: 1.05rem;
-    letter-spacing: -0.01em;
+    font-size: 1rem;
   }
 
-  .service-status {
+  /* ステータスバッジと応答速度 */
+  .service-details {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1.5rem; /* MSとアイコンの隙間 */
   }
-
   .latency {
-    color: var(--text-sub);
-    font-size: 0.85rem;
-    font-variant-numeric: tabular-nums;
-    margin-right: 0.5rem;
-  }
-
-  .status-dot-ok, .status-dot-warn, .status-dot-down, .status-dot-unknown {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-  }
-  .status-dot-ok { background-color: var(--green); box-shadow: 0 0 8px rgba(52, 199, 89, 0.4); }
-  .status-dot-warn { background-color: var(--yellow); box-shadow: 0 0 8px rgba(255, 204, 0, 0.4); }
-  .status-dot-down { background-color: var(--red); box-shadow: 0 0 8px rgba(255, 59, 48, 0.4); }
-  .status-dot-unknown { background-color: var(--gray); }
-
-  .status-label {
     font-size: 0.9rem;
-    font-weight: 500;
-    min-width: 4rem;
+    color: #888;
+    min-width: 60px;
+    text-align: right;
   }
 
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    min-width: 90px;
+    justify-content: center;
+  }
+  .status-icon {
+    width: 16px;
+    height: 16px;
+  }
 
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .error-text {
-    color: var(--red);
-    font-weight: 500;
-  }
+  /* ステータスごとの色分け */
+  .status-ok { background: #f0fdf4; color: #16a34a; }
+  .status-warn { background: #fefce8; color: #ca8a04; }
+  .status-down { background: #fef2f2; color: #dc2626; }
+  .status-unknown { background: #f3f4f6; color: #4b5563; }
 </style>
