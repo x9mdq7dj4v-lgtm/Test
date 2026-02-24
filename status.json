@@ -1,30 +1,34 @@
 {
-  "last_updated": "2026-02-24T10:46:51.207Z",
+  "last_updated": "2026-02-24T10:51:50.283Z",
   "system_status": "partial_outage",
   "services": [
     {
       "id": "bbs",
       "name": "掲示板 API",
-      "status": "unknown",
-      "message": "URL未設定"
+      "status": "down",
+      "code": 403,
+      "latency_ms": 346
     },
     {
       "id": "ruruna",
       "name": "Ruruna AI API",
-      "status": "unknown",
-      "message": "URL未設定"
+      "status": "down",
+      "code": 403,
+      "latency_ms": 86
     },
     {
       "id": "support",
       "name": "広報・サポート API",
-      "status": "unknown",
-      "message": "URL未設定"
+      "status": "down",
+      "code": 403,
+      "latency_ms": 116
     },
     {
       "id": "accounts",
       "name": "アカウント API",
-      "status": "unknown",
-      "message": "URL未設定"
+      "status": "down",
+      "code": 403,
+      "latency_ms": 136
     }
   ]
 }
