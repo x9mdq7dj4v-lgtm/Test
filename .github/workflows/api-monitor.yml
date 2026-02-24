@@ -1,0 +1,56 @@
+name: Heyete API Health Monitor
+
+on:
+  schedule:
+    # 毎時0分に実行（1時間おき）。間隔は必要に応じて変更してください。
+    - cron: '1 * * * *'
+  workflow_dispatch: # 手動で「Run workflow」ボタンを押せるようにする
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    # Secretsから環境変数として読み込む
+    env:
+      BBS_API_URL: ${{ secrets.BBS_API_URL }}
+      RURUNA_API_URL: ${{ secrets.RURUNA_API_URL }}
+      SUPPORT_API_URL: ${{ secrets.SUPPORT_API_URL }}
+      ACCOUNTS_API_URL: ${{ secrets.ACCOUNTS_API_URL }}
+
+    steps:
+      - name: Check Health Endpoints
+        run: |
+          # 環境変数からURLの配列を作成
+          URLS=(
+            "$BBS_API_URL"
+            "$RURUNA_API_URL"
+            "$SUPPORT_API_URL"
+            "$ACCOUNTS_API_URL"
+          )
+
+          FAILED=false
+
+          for url in "${URLS[@]}"; do
+            # シークレットが未設定の場合はスキップ
+            if [ -z "$url" ]; then
+              continue
+            fi
+
+            echo "Checking: $url"
+            # -s: 静かに実行, -o /dev/null: レスポンスボディを破棄, -w "%{http_code}": ステータスコードのみ取得
+            # CORSエラー回避のために適当なOriginヘッダーを付与
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Origin: https://support.heyete.com" "$url")
+            
+            if [ "$STATUS" -eq 200 ]; then
+              echo "✅ OK (Status: $STATUS)"
+            else
+              echo "❌ FAILED (Status: $STATUS)"
+              FAILED=true
+            fi
+          done
+
+          if [ "$FAILED" = true ]; then
+            echo "🚨 一つ以上のAPIがダウン、または依存関係のエラーが発生しています。"
+            exit 1 # exit 1 でActionを「失敗」状態にする
+          else
+             echo "🎉 すべてのAPIが正常に稼働しています！"
+          fi
