@@ -1,21 +1,29 @@
 {
-  "last_updated": "2026-02-24T15:01:12.853Z",
+  "last_updated": "2026-02-24T15:07:14.113Z",
   "system_status": "partial_outage",
   "api_services": [
     {
       "id": "bbs",
       "name": "掲示板 API",
-      "status": "down",
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 270,
+      "details": {
+        "success": true,
+        "status": "ok",
+        "timestamp": 1771945624,
+        "dependencies": {
+          "kv": "ok"
+        }
+      }
     },
     {
       "id": "ruruna",
       "name": "Ruruna AI API",
       "status": "operational",
-      "latency_ms": 197,
+      "latency_ms": 276,
       "details": {
         "status": "ok",
-        "timestamp": 1771945155747,
+        "timestamp": 1771945624653,
         "dependencies": {
           "kv": "ok",
           "ai": "ok"
@@ -25,17 +33,25 @@
     {
       "id": "support",
       "name": "広報・サポート API",
-      "status": "down",
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 295,
+      "details": {
+        "status": "ok",
+        "timestamp": 1771945624921,
+        "dependencies": {
+          "kv": "ok",
+          "resend": "ready"
+        }
+      }
     },
     {
       "id": "accounts",
       "name": "アカウント API",
       "status": "operational",
-      "latency_ms": 6230,
+      "latency_ms": 684,
       "details": {
         "status": "ok",
-        "timestamp": 1771945171658,
+        "timestamp": 1771945625277,
         "dependencies": {
           "db": "ok",
           "session_kv": "ok"
@@ -48,82 +64,92 @@
       "id": "web-top",
       "name": "総合トップサイト",
       "status": "operational",
-      "latency_ms": 178,
+      "latency_ms": 184,
       "details": null
     },
     {
       "id": "web-myaccounts",
       "name": "MyAccounts",
-      "status": "down",
-      "error": "This operation was aborted"
-    },
-    {
-      "id": "web-accounts",
-      "name": "Accounts",
-      "status": "down",
-      "error": "This operation was aborted"
-    },
-    {
-      "id": "web-ruruna",
-      "name": "Ruruna AI",
-      "status": "down",
-      "error": "This operation was aborted"
-    },
-    {
-      "id": "web-anon",
-      "name": "24.anon",
       "status": "operational",
       "latency_ms": 380,
       "details": null
     },
     {
-      "id": "web-news",
-      "name": "Heyete News",
-      "status": "down",
-      "error": "This operation was aborted"
-    },
-    {
-      "id": "web-blog",
-      "name": "Heyete Blog",
+      "id": "web-accounts",
+      "name": "Accounts",
       "status": "operational",
       "latency_ms": 159,
       "details": null
     },
     {
+      "id": "web-ruruna",
+      "name": "Ruruna AI",
+      "status": "operational",
+      "latency_ms": 326,
+      "details": null
+    },
+    {
+      "id": "web-anon",
+      "name": "24.anon",
+      "status": "operational",
+      "latency_ms": 308,
+      "details": null
+    },
+    {
+      "id": "web-news",
+      "name": "Heyete News",
+      "status": "operational",
+      "latency_ms": 322,
+      "details": null
+    },
+    {
+      "id": "web-blog",
+      "name": "Heyete Blog",
+      "status": "operational",
+      "latency_ms": 235,
+      "details": null
+    },
+    {
       "id": "web-dev",
       "name": "Heyete Developer",
-      "status": "down",
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 144,
+      "details": null
     },
     {
       "id": "web-corp",
       "name": "コーポレートサイト",
       "status": "down",
-      "error": "This operation was aborted"
+      "code": 404,
+      "latency_ms": 103
     },
     {
       "id": "web-policies",
       "name": "規約とポリシー",
-      "status": "down",
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 277,
+      "details": null
     },
     {
       "id": "web-support",
       "name": "サポートお問い合わせ",
-      "status": "down",
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 230,
+      "details": null
     },
     {
       "id": "web-docs",
       "name": "資料サイト",
-      "status": "down",
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 157,
+      "details": null
     },
     {
       "id": "web-anon-lite",
       "name": "24.anon 軽量版",
-      "status": "down",
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 416,
+      "details": null
     }
   ]
 }
