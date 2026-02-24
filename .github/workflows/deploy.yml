@@ -2,11 +2,10 @@ name: Deploy Astro to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ] # ご自身のブランチ名に合わせてください（masterの場合は書き換え）
     paths-ignore:
-      - 'public/status.json'
+      - 'public/status.json' # status.jsonの更新では再ビルドしない
   workflow_dispatch:
-
 
 permissions:
   contents: read
@@ -25,16 +24,18 @@ jobs:
         with:
           node-version: '20'
 
+      # ★package.json を元に Astro 本体をインストール
       - name: Install dependencies
         run: npm install
 
+      # ★Astroのビルドコマンドを実行
       - name: Build with Astro
         run: npm run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist 
+          path: ./dist # AstroがHTMLを書き出すデフォルトのフォルダ
 
   deploy:
     needs: build
