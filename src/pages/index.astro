@@ -200,14 +200,16 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
         overallTitle = manualData.maintenance.title || 'システムメンテナンス中です';
         overallIcon = icons.maintenance;
         if (manualData.maintenance.description) {
-          descriptionHTML = `<p class="banner-desc">${manualData.maintenance.description}</p>`;
+
+          descriptionHTML = `<p class="banner-desc">${escapeHTML(manualData.maintenance.description)}</p>`;
         }
       } else if (manualData.incident?.active) {
         overallClass = 'banner-down';
         overallTitle = manualData.incident.title || 'システム障害が発生しています';
         overallIcon = icons.down;
         if (manualData.incident.description) {
-          descriptionHTML = `<p class="banner-desc">${manualData.incident.description}</p>`;
+
+          descriptionHTML = `<p class="banner-desc">${escapeHTML(manualData.incident.description)}</p>`;
         }
       }
     }
@@ -215,15 +217,15 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
     const updatedAt = new Date(data.last_updated).toLocaleString('ja-JP', {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
-    
+
     // バナーのHTML
     let bannerHtml = `
       <div class="overall-banner ${overallClass}">
         <div class="banner-icon">${overallIcon}</div>
         <div class="banner-text">
-          <h2>${overallTitle}</h2>
-          ${descriptionHTML}
-          <p class="update-time">最終更新: ${updatedAt}</p>
+          <h2>${escapeHTML(overallTitle)}</h2>
+          ${descriptionHTML} 
+          <p class="update-time">最終更新: ${escapeHTML(updatedAt)}</p>
         </div>
       </div>
     `;
