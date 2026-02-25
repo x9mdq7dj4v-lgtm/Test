@@ -1,0 +1,165 @@
+---
+---
+
+<div class="maintenance-widget">
+  <div class="widget-header">
+    <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      近日中のメンテナンス
+    </h3>
+  </div>
+  
+  <div id="maintenance-content">
+    <div class="loading-mini">確認中...</div>
+  </div>
+
+  <div class="history-link">
+    <a href="/history">メンテナンス履歴・予定一覧を見る &rarr;</a>
+  </div>
+</div>
+
+<script>
+  async function fetchUpcomingMaintenance() {
+    const container = document.getElementById('maintenance-content');
+    if (!container) return;
+
+    try {
+      // JSONURLはご自身の環境に合わせて適宜変更してください
+      const url = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/maintenance_info.json';
+      const timestamp = new Date().getTime();
+      const res = await fetch(`${url}?t=${timestamp}`);
+      
+      if (!res.ok) throw new Error('Network response was not ok');
+      const data = await res.json();
+
+      const now = new Date().getTime();
+      const oneWeekLater = now + (7 * 24 * 60 * 60 * 1000); // 現在から7日後
+
+      // まだ終了しておらず、かつ1週間以内に開始されるものをフィルタリング
+      const upcoming = data.filter((m: any) => {
+        const start = new Date(m.startAt).getTime();
+        const end = new Date(m.endAt).getTime();
+        return end > now && start <= oneWeekLater;
+      });
+
+      // 日付の近い順にソート
+      upcoming.sort((a: any, b: any) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+
+      if (upcoming.length === 0) {
+        container.innerHTML = '<p class="empty-text">近日中に行われるメンテナンスはありません。</p>';
+        return;
+      }
+
+      let html = '<ul class="maint-list">';
+      upcoming.forEach((m: any) => {
+        const startStr = new Date(m.startAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const endStr = new Date(m.endAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        
+        html += `
+          <li class="maint-item">
+            <div class="maint-time">${startStr} 〜 ${endStr}</div>
+            <div class="maint-title">${m.title}</div>
+            <div class="maint-desc">${m.description}</div>
+          </li>
+        `;
+      });
+      html += '</ul>';
+      container.innerHTML = html;
+
+    } catch (error) {
+      console.error('メンテナンス情報の取得に失敗:', error);
+      container.innerHTML = '<p class="error-text">情報の取得に失敗しました。</p>';
+    }
+  }
+
+  fetchUpcomingMaintenance();
+</script>
+
+<style>
+  .maintenance-widget {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid #eaeaea;
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+  }
+  .widget-header {
+    background: #f8fafc;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #eaeaea;
+  }
+  .widget-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .icon {
+    width: 20px;
+    height: 20px;
+    color: #64748b;
+  }
+  #maintenance-content {
+    padding: 1.5rem;
+  }
+  .empty-text, .loading-mini, .error-text {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin: 0;
+    text-align: center;
+  }
+  .error-text { color: #ef4444; }
+  
+  .maint-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .maint-item {
+    padding-bottom: 1.2rem;
+    margin-bottom: 1.2rem;
+    border-bottom: 1px dashed #e2e8f0;
+  }
+  .maint-item:last-child {
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-bottom: none;
+  }
+  .maint-time {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2563eb;
+    margin-bottom: 0.3rem;
+  }
+  .maint-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #1e293b;
+    margin-bottom: 0.3rem;
+  }
+  .maint-desc {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.5;
+  }
+  
+  .history-link {
+    background: #f8fafc;
+    padding: 1rem 1.5rem;
+    text-align: right;
+    border-top: 1px solid #eaeaea;
+  }
+  .history-link a {
+    color: #2563eb;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .history-link a:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+  }
+</style>
