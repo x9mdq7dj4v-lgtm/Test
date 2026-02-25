@@ -215,9 +215,9 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
     }
 
     const updatedAt = new Date(data.last_updated).toLocaleString('ja-JP', {
+      timeZone: 'Asia/Tokyo', // 確実にJSTとして計算させるために追加
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
-
     // バナーのHTML
     let bannerHtml = `
       <div class="overall-banner ${overallClass}">
@@ -225,7 +225,7 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
         <div class="banner-text">
           <h2>${escapeHTML(overallTitle)}</h2>
           ${descriptionHTML} 
-          <p class="update-time">最終更新: ${escapeHTML(updatedAt)}</p>
+          <p class="update-time">最終更新: ${escapeHTML(updatedAt)}(JST)</p>
         </div>
       </div>
     `;
