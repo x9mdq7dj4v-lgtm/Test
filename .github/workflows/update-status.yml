@@ -57,87 +57,136 @@ jobs:
             { id: 'web-anon-lite', name: '24.anon 軽量版', url: 'https://anon.heyete.net/test.html' }
           ];
 
-          async function checkEndpoint(ep, isApi) {
-            const maxRetries = 1;      // 最大リトライ回数 (最初の1回 + リトライ1回 = 計2回)
-            const retryDelayMs = 5000; // リトライ前の待機時間 (5秒)
-
-            for (let attempt = 0; attempt <= maxRetries; attempt++) {
-              const start = Date.now();
-              try {
-                if (!ep.url) {
-                  return { id: ep.id, name: ep.name, status: 'unknown', message: 'URL未設定' };
-                }
-
-                // 10秒のタイムアウトを設定
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-                const options = { 
-                  signal: controller.signal,
-                  headers: {
-                    "User-Agent": "HeyeteBot"
-                  }
-                };
-
-                if (isApi) {
-                  options.headers["Origin"] = "https://support.heyete.com";
-                }
-
-                const res = await fetch(ep.url, options);
-                clearTimeout(timeoutId);
-                
-                const latency = Date.now() - start;
-
-                if (res.ok) {
-                  let status = 'operational';
-                  let details = null;
-
-                  if (isApi) {
-                    const data = await res.json().catch(() => ({}));
-                    const hasDepError = data.dependencies && Object.values(data.dependencies).some(v => String(v).includes('failed') || String(v).includes('error'));
-                    if (hasDepError) status = 'degraded';
-                    details = data;
-                  }
-
-                  // 正常 (operational) なら、ループを抜けて即座に結果を返す
-                  if (status === 'operational') {
-                    return { id: ep.id, name: ep.name, status, latency_ms: latency, details };
-                  } else if (attempt === maxRetries) {
-                    // APIの依存エラー等(degraded)で、最後の試行だった場合はその結果を返す
-                    return { id: ep.id, name: ep.name, status, latency_ms: latency, details };
-                  }
-                } else {
-                  // 200以外で、最後の試行だった場合はダウンとして返す
-                  if (attempt === maxRetries) {
-                    return { id: ep.id, name: ep.name, status: 'down', code: res.status, latency_ms: latency };
-                  }
-                }
-              } catch (err) {
-                // ネットワークエラー等で、最後の試行だった場合はダウンとして返す
-                if (attempt === maxRetries) {
-                  return { id: ep.id, name: ep.name, status: 'down', error: err.message };
-                }
+          // 単一の問い合わせを行う関数
+          async function singleCheck(ep, isApi) {
+            const start = Date.now();
+            try {
+              if (!ep.url) {
+                return { status: 'unknown', message: 'URL未設定', latency_ms: 0 };
               }
 
-              // 正常でない（エラー、HTTPステータス異常、またはdegraded）場合は待機してリトライ
-              console.log(`[警告] ${ep.name} のチェックに失敗しました。${retryDelayMs / 1000}秒後にリトライします... (試行: ${attempt + 1}/${maxRetries + 1})`);
-              await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+              // 10秒のタイムアウトを設定
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+              const options = { 
+                signal: controller.signal,
+                headers: {
+                  "User-Agent": "HeyeteBot"
+                }
+              };
+
+              if (isApi) {
+                options.headers["Origin"] = "https://support.heyete.com";
+              }
+
+              const res = await fetch(ep.url, options);
+              clearTimeout(timeoutId);
+              
+              const latency = Date.now() - start;
+
+              if (res.ok) {
+                let status = 'operational';
+                let details = null;
+
+                if (isApi) {
+                  const data = await res.json().catch(() => ({}));
+                  // 既存のdegraded判定ロジック
+                  const hasDepError = data.dependencies && Object.values(data.dependencies).some(v => String(v).includes('failed') || String(v).includes('error'));
+                  if (hasDepError) status = 'degraded';
+                  details = data;
+                }
+                return { status, latency_ms: latency, details, code: res.status };
+              } else {
+                return { status: 'down', latency_ms: latency, code: res.status };
+              }
+            } catch (err) {
+              return { status: 'down', latency_ms: Date.now() - start, error: err.message };
             }
           }
 
+          // 3回分の結果を集計する関数
+          function aggregateResults(ep, attempts) {
+            let totalLatency = 0;
+            let validLatencyCount = 0;
+            const statusCounts = {};
+
+            attempts.forEach(a => {
+              if (typeof a.latency_ms === 'number') {
+                totalLatency += a.latency_ms;
+                validLatencyCount++;
+              }
+              statusCounts[a.status] = (statusCounts[a.status] || 0) + 1;
+            });
+
+            // 応答速度の平均化
+            const avgLatency = validLatencyCount > 0 ? Math.round(totalLatency / validLatencyCount) : 0;
+
+            // ステータスの多数決
+            let majorityStatus = 'unknown';
+            let maxCount = -1;
+            for (const [status, count] of Object.entries(statusCounts)) {
+              if (count > maxCount) {
+                maxCount = count;
+                majorityStatus = status;
+              }
+            }
+
+            // 多数決で選ばれたステータスを持つ直近の試行を代表値としてエラー情報などを取得
+            const representative = attempts.slice().reverse().find(a => a.status === majorityStatus) || attempts[attempts.length - 1];
+
+            const result = {
+              id: ep.id,
+              name: ep.name,
+              status: majorityStatus,
+              latency_ms: avgLatency
+            };
+
+            // 既存コードに基づくエラーや詳細情報を付与
+            if (representative.details) result.details = representative.details;
+            if (representative.code) result.code = representative.code;
+            if (representative.error) result.error = representative.error;
+            if (representative.message) result.message = representative.message;
+
+            return result;
+          }
+
           async function check() {
+            const maxPasses = 3;
+            const waitMs = 20000; // 20秒待機
+
+            // 試行ごとの結果保存用オブジェクト
+            const endpointsData = {};
+            apiEndpoints.forEach(ep => endpointsData[ep.id] = { ep, isApi: true, attempts: [] });
+            webEndpoints.forEach(ep => endpointsData[ep.id] = { ep, isApi: false, attempts: [] });
+
+            for (let pass = 1; pass <= maxPasses; pass++) {
+              console.log(`[Pass ${pass}/${maxPasses}] チェックを開始します...`);
+              
+              // 全てのAPIエンドポイントに問い合わせ
+              for (const ep of apiEndpoints) {
+                endpointsData[ep.id].attempts.push(await singleCheck(ep, true));
+              }
+              // 全てのWebエンドポイントに問い合わせ
+              for (const ep of webEndpoints) {
+                endpointsData[ep.id].attempts.push(await singleCheck(ep, false));
+              }
+
+              // 最終パス以外は20秒待機
+              if (pass < maxPasses) {
+                console.log(`次のチェックまで ${waitMs / 1000} 秒待機します...`);
+                await new Promise(resolve => setTimeout(resolve, waitMs));
+              }
+            }
+
+            console.log(`集計処理を実行中...`);
             const apiResults = [];
             const webResults = [];
 
-            // APIのチェック
-            for (const ep of apiEndpoints) {
-              apiResults.push(await checkEndpoint(ep, true));
-            }
-            // Webのチェック
-            for (const ep of webEndpoints) {
-              webResults.push(await checkEndpoint(ep, false));
-            }
-            
+            // 全ての結果を集計
+            apiEndpoints.forEach(ep => apiResults.push(aggregateResults(ep, endpointsData[ep.id].attempts)));
+            webEndpoints.forEach(ep => webResults.push(aggregateResults(ep, endpointsData[ep.id].attempts)));
+
             const allResults = [...apiResults, ...webResults];
             const isAllOk = allResults.every(r => r.status === 'operational' || r.status === 'unknown');
 
