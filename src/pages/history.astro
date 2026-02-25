@@ -33,6 +33,23 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
+
+
+function escapeHTML(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/[&'`"<>]/g, function(match) {
+    return {
+      '&': '&amp;',
+      "'": '&#x27;',
+      '`': '&#x60;',
+      '"': '&quot;',
+      '<': '&lt;',
+      '>': '&gt;',
+    }[match];
+  });
+}
+
+
   async function fetchHistory() {
     const scheduledContainer = document.getElementById('scheduled-container')!;
     const scheduledContent = document.getElementById('scheduled-content')!;
@@ -65,23 +82,23 @@ import Layout from '../layouts/Layout.astro';
         }
         let html = '<ul class="maint-list">';
         items.forEach((m: any) => {
-          const startStr = new Date(m.startAt).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-          const endStr = new Date(m.endAt).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-          const statusBadge = new Date(m.endAt).getTime() <= now 
-            ? '<span class="badge badge-completed">完了</span>' 
-            : '<span class="badge badge-scheduled">予定</span>';
+  const startStr = new Date(m.startAt).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const endStr = new Date(m.endAt).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const statusBadge = new Date(m.endAt).getTime() <= now 
+    ? '<span class="badge badge-completed">完了</span>' 
+    : '<span class="badge badge-scheduled">予定</span>';
 
-          html += `
-            <li class="maint-item">
-              <div class="maint-header">
-                <span class="maint-time">${startStr} 〜 ${endStr}</span>
-                ${statusBadge}
-              </div>
-              <div class="maint-title">${m.title}</div>
-              <div class="maint-desc">${m.description}</div>
-            </li>
-          `;
-        });
+  html += `
+    <li class="maint-item">
+      <div class="maint-header">
+        <span class="maint-time">${startStr} 〜 ${endStr}</span>
+        ${statusBadge}
+      </div>
+      <div class="maint-title">${escapeHTML(m.title)}</div>
+      <div class="maint-desc">${escapeHTML(m.description)}</div>
+    </li>
+  `;
+});
         html += '</ul>';
         return html;
       };
