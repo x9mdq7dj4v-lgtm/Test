@@ -18,28 +18,25 @@
 </div>
 
 <script>
-
-function escapeHTML(str) {
-  if (typeof str !== 'string') return str;
-  return str.replace(/[&'`"<>]/g, function(match) {
-    return {
-      '&': '&amp;',
-      "'": '&#x27;',
-      '`': '&#x60;',
-      '"': '&quot;',
-      '<': '&lt;',
-      '>': '&gt;',
-    }[match];
-  });
-}
-
+  function escapeHTML(str) {
+    if (typeof str !== 'string') return str;
+    return str.replace(/[&'`"<>]/g, function(match) {
+      return {
+        '&': '&amp;',
+        "'": '&#x27;',
+        '`': '&#x60;',
+        '"': '&quot;',
+        '<': '&lt;',
+        '>': '&gt;',
+      }[match];
+    });
+  }
 
   async function fetchUpcomingMaintenance() {
     const container = document.getElementById('maintenance-content');
     if (!container) return;
 
     try {
-      // JSONURLはご自身の環境に合わせて適宜変更してください
       const url = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/maintenance_info.json';
       const timestamp = new Date().getTime();
       const res = await fetch(`${url}?t=${timestamp}`);
@@ -49,22 +46,19 @@ function escapeHTML(str) {
 
       const now = new Date().getTime();
       const oneWeekLater = now + (7 * 24 * 60 * 60 * 1000);
-      // 現在から7日後
 
-      // まだ終了しておらず、かつ1週間以内に開始されるものをフィルタリング
       const upcoming = data.filter((m: any) => {
         const start = new Date(m.startAt).getTime();
         const end = new Date(m.endAt).getTime();
         return end > now && start <= oneWeekLater;
       });
-      // 日付の近い順にソート
+
       upcoming.sort((a: any, b: any) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
 
       if (upcoming.length === 0) {
-        // ▼ フワッと切り替えるための処理 ▼
         container.style.opacity = '0';
         setTimeout(() => {
-          container.innerHTML = '<p class="empty-text">近日中に行われるメンテナンスはありません。</p>';
+          container.innerHTML = '<div class="empty-card"><p class="empty-text">近日中に行われるメンテナンスはありません。</p></div>';
           container.style.opacity = '1';
         }, 200);
         return;
@@ -72,20 +66,19 @@ function escapeHTML(str) {
 
       let html = '<ul class="maint-list">';
       upcoming.forEach((m: any) => {
-  const startStr = new Date(m.startAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const endStr = new Date(m.endAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  
-  html += `
-    <li class="maint-item">
-      <div class="maint-time">${startStr} 〜 ${endStr}</div>
-      <div class="maint-title">${escapeHTML(m.title)}</div>
-      <div class="maint-desc">${escapeHTML(m.description)}</div>
-    </li>
-  `;
-});
+        const startStr = new Date(m.startAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const endStr = new Date(m.endAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        
+        html += `
+          <li class="maint-item">
+            <div class="maint-time">${startStr} 〜 ${endStr}</div>
+            <div class="maint-title">${escapeHTML(m.title)}</div>
+            <div class="maint-desc">${escapeHTML(m.description)}</div>
+          </li>
+        `;
+      });
       html += '</ul>';
 
-      // ▼ データをリストに反映する際もフワッと切り替える ▼
       container.style.opacity = '0';
       setTimeout(() => {
         container.innerHTML = html;
@@ -96,7 +89,7 @@ function escapeHTML(str) {
       console.error('メンテナンス情報の取得に失敗:', error);
       container.style.opacity = '0';
       setTimeout(() => {
-        container.innerHTML = '<p class="error-text">情報の取得に失敗しました。</p>';
+        container.innerHTML = '<div class="empty-card"><p class="error-text">情報の取得に失敗しました。</p></div>';
         container.style.opacity = '1';
       }, 200);
     }
@@ -106,97 +99,113 @@ function escapeHTML(str) {
 </script>
 
 <style>
+  /* 全体のラッパー。枠をなくし、背景に溶け込ませます */
   .maintenance-widget {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    border: 1px solid #eaeaea;
     margin-bottom: 2.5rem;
-    overflow: hidden;
   }
+  
+  /* ヘッダー周りの調整 */
   .widget-header {
-    background: #f8fafc;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #eaeaea;
+    padding: 0 0.5rem 1rem 0.5rem;
   }
   .widget-header h3 {
     margin: 0;
-    font-size: 1.1rem;
-    color: #334155;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #1d1d1f;
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
   .icon {
-    width: 20px;
-    height: 20px;
-    color: #64748b;
+    width: 22px;
+    height: 22px;
+    color: #86868b;
   }
+
+  /* コンテンツエリア */
   #maintenance-content {
-    padding: 1.5rem;
-    /* ▼ カクつきを防ぎ、アニメーションを有効にする魔法 ▼ */
-    min-height: 120px; 
+    min-height: 120px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    transition: opacity 0.3s ease; 
+    transition: opacity 0.3s ease;
   }
-  .empty-text, .loading-mini, .error-text {
-    color: #64748b;
-    font-size: 0.95rem;
-    margin: 0;
+
+  /* カラやエラー時の表示もカード状に */
+  .empty-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 2rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.03);
     text-align: center;
   }
-  .error-text { color: #ef4444; }
+  .empty-text, .loading-mini {
+    color: #86868b;
+    font-size: 0.95rem;
+    margin: 0;
+  }
+  .error-text { 
+    color: #ff3b30; 
+    font-size: 0.95rem;
+    margin: 0;
+  }
   
+  /* リストとアイテムのスタイリング（ここが最大の変更点です） */
   .maint-list {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* 項目間にしっかりとした余白を確保 */
   }
   .maint-item {
-    padding-bottom: 1.2rem;
-    margin-bottom: 1.2rem;
-    border-bottom: 1px dashed #e2e8f0;
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 18px; /* Appleライクな滑らかな角丸 */
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  .maint-item:last-child {
-    padding-bottom: 0;
-    margin-bottom: 0;
-    border-bottom: none;
+  /* ホバー時に少し浮き上がるようなインタラクション */
+  .maint-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03);
   }
+
+  /* テキストのタイポグラフィ */
   .maint-time {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #2563eb;
-    margin-bottom: 0.3rem;
+    color: #0066cc;
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.02em;
   }
   .maint-title {
     font-weight: 600;
-    font-size: 1rem;
-    color: #1e293b;
-    margin-bottom: 0.3rem;
+    font-size: 1.1rem;
+    color: #1d1d1f;
+    margin-bottom: 0.5rem;
   }
   .maint-desc {
-    font-size: 0.9rem;
-    color: #64748b;
+    font-size: 0.95rem;
+    color: #86868b;
     line-height: 1.5;
   }
   
+  /* 履歴リンクの調整 */
   .history-link {
-    background: #f8fafc;
-    padding: 1rem 1.5rem;
+    padding: 1.5rem 0.5rem 0 0.5rem;
     text-align: right;
-    border-top: 1px solid #eaeaea;
   }
   .history-link a {
-    color: #2563eb;
+    color: #0066cc;
     text-decoration: none;
     font-size: 0.9rem;
     font-weight: 500;
     transition: color 0.2s;
   }
   .history-link a:hover {
-    color: #1d4ed8;
-    text-decoration: underline;
+    color: #004499;
   }
 </style>
