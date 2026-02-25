@@ -72,12 +72,21 @@ function escapeHTML(str) {
 
       let html = '<ul class="maint-list">';
       upcoming.forEach((m: any) => {
-  const startStr = new Date(m.startAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const endStr = new Date(m.endAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  // 閲覧環境に依存せず、確実に日本時間（JST）で表示させるためのオプション
+  const timeOptions: Intl.DateTimeFormatOptions = { 
+    timeZone: 'Asia/Tokyo', 
+    month: 'short', 
+    day: 'numeric', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  };
+  
+  const startStr = new Date(m.startAt).toLocaleString('ja-JP', timeOptions);
+  const endStr = new Date(m.endAt).toLocaleString('ja-JP', timeOptions);
   
   html += `
     <li class="maint-item">
-      <div class="maint-time">${startStr} 〜 ${endStr}</div>
+      <div class="maint-time">${startStr} 〜 ${endStr}(JST)</div>
       <div class="maint-title">${escapeHTML(m.title)}</div>
       <div class="maint-desc">${escapeHTML(m.description)}</div>
     </li>
