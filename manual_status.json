@@ -1,12 +1,14 @@
 {
   "maintenance": {
-    "active": false,
+    "active": true,
     "title": "定期メンテナンスのお知らせ",
+    "id": ["bbs", "web-top"], 
     "description": "現在、システムメンテナンスを実施しています。終了予定時刻は15:00です。"
   },
   "incident": {
-    "active": true,
+    "active": false,
     "title": "障害発生中",
-    "description": "一部のサービスに接続しづらい事象が発生しており、現在復旧作業中です。"
+    "id": ["all"],
+    "description": "システム全体に接続しづらい事象が発生しております。"
   }
 }
