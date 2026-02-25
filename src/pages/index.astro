@@ -91,37 +91,58 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
-  function generateServiceGroupHTML(title: string, services: any[]) {
+  // ▼ 引数に manualData を追加 ▼
+  function generateServiceGroupHTML(title: string, services: any[], manualData: any = null) {
     let html = `
       <div class="service-group">
         <h3 class="group-title">${title}</h3>
         <div class="service-list">
     `;
-    
+
     services.forEach((service: any) => {
       let icon = icons.ok;
       let statusText = '稼働中';
       let statusColor = 'status-ok';
+      let latencyText = `${service.latency_ms || 0} ms`;
 
-      if (service.status === 'degraded') {
-        icon = icons.warn;
-        statusText = '警告・遅延';
-        statusColor = 'status-warn';
-      } else if (service.status === 'down') {
+      // ▼ 手動フラグの上書き判定 ▼
+      const isMaintenance = manualData?.maintenance?.active && 
+        (manualData.maintenance.id?.includes('all') || manualData.maintenance.id?.includes(service.id));
+        
+      const isIncident = manualData?.incident?.active && 
+        (manualData.incident.id?.includes('all') || manualData.incident.id?.includes(service.id));
+
+      if (isMaintenance) {
+        icon = icons.maintenance; // 先ほど追加したアイコン
+        statusText = 'メンテ中';
+        statusColor = 'status-maintenance';
+        latencyText = '-'; // メンテ中はレイテンシを隠す
+      } else if (isIncident) {
         icon = icons.down;
-        statusText = '停止中';
+        statusText = '障害中';
         statusColor = 'status-down';
-      } else if (service.status === 'unknown') {
-        icon = icons.unknown;
-        statusText = '不明';
-        statusColor = 'status-unknown';
+      } else {
+        // ▼ 自動検知（status.json）の判定（通常時） ▼
+        if (service.status === 'degraded') {
+          icon = icons.warn;
+          statusText = '警告・遅延';
+          statusColor = 'status-warn';
+        } else if (service.status === 'down') {
+          icon = icons.down;
+          statusText = '停止中';
+          statusColor = 'status-down';
+        } else if (service.status === 'unknown') {
+          icon = icons.unknown;
+          statusText = '不明';
+          statusColor = 'status-unknown';
+        }
       }
 
       html += `
         <div class="service-row">
           <div class="service-name">${service.name}</div>
           <div class="service-details">
-            <span class="latency">${service.latency_ms || 0} ms</span>
+            <span class="latency">${latencyText}</span>
             <div class="status-badge ${statusColor}">
               ${icon}
               <span>${statusText}</span>
@@ -182,16 +203,15 @@ import Layout from '../layouts/Layout.astro';
     `;
 
     if (data.api_services && data.api_services.length > 0) {
-      html += generateServiceGroupHTML('APIサービス', data.api_services);
+      html += generateServiceGroupHTML('APIサービス', data.api_services, manualData);
     }
     if (data.web_services && data.web_services.length > 0) {
-      html += generateServiceGroupHTML('Webサービス', data.web_services);
+      html += generateServiceGroupHTML('Webサービス', data.web_services, manualData);
     }
 
     container.innerHTML = html;
     loading.style.display = 'none';
     container.style.display = 'block';
-  }
 
   loadStatus();
   setInterval(loadStatus, 60000);
@@ -342,4 +362,5 @@ import Layout from '../layouts/Layout.astro';
   .status-warn { background: #fefce8; color: #ca8a04; }
   .status-down { background: #fef2f2; color: #dc2626; }
   .status-unknown { background: #f3f4f6; color: #4b5563; }
+  .status-maintenance { background: #eff6ff; color: #2563eb; }
 </style>
