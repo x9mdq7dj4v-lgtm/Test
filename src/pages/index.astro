@@ -165,17 +165,17 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
       }
 
       html += `
-        <div class="service-row">
-          <div class="service-name">${service.name}</div>
-          <div class="service-details">
-            <span class="latency">${latencyText}</span>
-            <div class="status-badge ${statusColor}">
-              ${icon}
-              <span>${statusText}</span>
-            </div>
-          </div>
-        </div>
-      `;
+  <div class="service-row">
+    <div class="service-name">${escapeHTML(service.name)}</div>
+    <div class="service-details">
+      <span class="latency">${escapeHTML(latencyText)}</span>
+      <div class="status-badge ${statusColor}">
+        ${icon}
+        <span>${escapeHTML(statusText)}</span>
+      </div>
+    </div>
+  </div>
+`;
     });
 
     html += `</div></div>`;
