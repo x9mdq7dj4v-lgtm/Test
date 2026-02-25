@@ -54,7 +54,7 @@ import Layout from '../layouts/Layout.astro';
             const manualData = cachedManualStr ? JSON.parse(cachedManualStr) : null; 
             
             // ▼ 修正: manualData も一緒に渡す
-            renderStatus(data, manualData); 
+            renderStatus(data, manualData);
             return; 
           } catch(e) {
             console.error('キャッシュデータのパースに失敗しました', e);
@@ -73,10 +73,10 @@ import Layout from '../layouts/Layout.astro';
         fetch(`${rawUrl}?t=${timestamp}`),
         fetch(`${manualUrl}?t=${timestamp}`).catch(() => null)
       ]);
-
+      
       if (!statusRes.ok) throw new Error('Network response was not ok');
       const data = await statusRes.json();
-
+      
       // 手動データの読み込み
       let manualData = null;
       if (manualRes && manualRes.ok) {
@@ -91,45 +91,10 @@ import Layout from '../layouts/Layout.astro';
         setHeyeteCookie(manualCookie, JSON.stringify(manualData), 60);
       } else {
         // nullの場合（取得失敗など）は古いキャッシュを削除
-        setHeyeteCookie(manualCookie, "", 0); 
+        setHeyeteCookie(manualCookie, "", 0);
       }
 
       renderStatus(data, manualData);
-    } catch (error) {
-      const loadingEl = document.getElementById('loading');
-      if (loadingEl) {
-        loadingEl.innerHTML = '<p class="error-text">⚠️ ステータス情報の取得に失敗しました。</p>';
-      }
-      console.error(error);
-    }
-  }
-
-    try {
-      const rawUrl = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/status.json';
-      // ▼ 追加: 手動設定ファイルのURL ▼
-      const manualUrl = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/manual_status.json'; 
-      const timestamp = new Date().getTime();
-
-      // 並行して両方のファイルを取得する
-      const [statusRes, manualRes] = await Promise.all([
-        fetch(`${rawUrl}?t=${timestamp}`),
-        fetch(`${manualUrl}?t=${timestamp}`).catch(() => null) // 手動ファイルが無い場合のエラー回避
-      ]);
-
-      if (!statusRes.ok) throw new Error('Network response was not ok');
-      const data = await statusRes.json();
-
-      // 手動データの読み込み
-      let manualData = null;
-      if (manualRes && manualRes.ok) {
-        manualData = await manualRes.json();
-      }
-
-      setHeyeteCookie(timeCookie, now.toString(), 60);
-      setHeyeteCookie(dataCookie, JSON.stringify(data), 60);
-      // 今回は manualData はキャッシュせず常に最新を見に行くか、表示時のみ結合させます
-
-      renderStatus(data, manualData); // 引数を追加
     } catch (error) {
       const loadingEl = document.getElementById('loading');
       if (loadingEl) {
@@ -146,7 +111,7 @@ import Layout from '../layouts/Layout.astro';
         <h3 class="group-title">${title}</h3>
         <div class="service-list">
     `;
-
+    
     services.forEach((service: any) => {
       let icon = icons.ok;
       let statusText = '稼働中';
@@ -169,7 +134,8 @@ import Layout from '../layouts/Layout.astro';
         icon = icons.down;
         statusText = '障害中';
         statusColor = 'status-down';
-      } else {
+      } 
+      else {
         // ▼ 自動検知（status.json）の判定（通常時） ▼
         if (service.status === 'degraded') {
           icon = icons.warn;
@@ -237,7 +203,7 @@ import Layout from '../layouts/Layout.astro';
     const updatedAt = new Date(data.last_updated).toLocaleString('ja-JP', {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
-
+    
     // ▼ 描画内容を更新 ▼
     let html = `
       <div class="overall-banner ${overallClass}">
@@ -249,7 +215,6 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
     `;
-
     
     if (data.api_services && data.api_services.length > 0) {
       html += generateServiceGroupHTML('APIサービス', data.api_services, manualData);
@@ -261,19 +226,17 @@ import Layout from '../layouts/Layout.astro';
     container.innerHTML = html;
     loading.style.display = 'none';
     container.style.display = 'block';
-    }
+  }
 
   loadStatus();
   setInterval(loadStatus, 60000);
 </script>
 
 <style is:global>
-
   .status-wrapper {
     max-width: 800px;
     margin: 2rem auto;
   }
-
 
   .loading {
     text-align: center;
@@ -289,7 +252,6 @@ import Layout from '../layouts/Layout.astro';
     margin: 0 auto 1rem auto;
   }
   @keyframes spin { 100% { transform: rotate(360deg); } }
-
 
   .overall-banner {
     display: flex;
@@ -325,7 +287,6 @@ import Layout from '../layouts/Layout.astro';
     color: #666;
   }
 
-
   .service-group {
     margin-bottom: 2.5rem;
   }
@@ -358,7 +319,6 @@ import Layout from '../layouts/Layout.astro';
     font-weight: 500;
     font-size: 1rem;
   }
-
 
   .service-details {
     display: flex;
@@ -406,7 +366,6 @@ import Layout from '../layouts/Layout.astro';
     margin: 0.5rem 0 0.8rem 0;
     line-height: 1.4;
   }
-
 
   .status-ok { background: #f0fdf4; color: #16a34a; }
   .status-warn { background: #fefce8; color: #ca8a04; }
