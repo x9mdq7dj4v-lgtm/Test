@@ -37,6 +37,7 @@ import Layout from '../layouts/Layout.astro';
   async function loadStatus() {
     const timeCookie = 'h_for-now-lol';
     const dataCookie = 'h_provisional-lol';
+    const manualCookie = 'h_manual-lol'; // ▼ 追加: 手動データ用のCookieキー
     const now = Date.now();
 
     const cachedTimeStr = getHeyeteCookie(timeCookie);
@@ -44,15 +45,64 @@ import Layout from '../layouts/Layout.astro';
       const cachedTime = parseInt(cachedTimeStr, 10);
       if (now - cachedTime < 30000) {
         const cachedDataStr = getHeyeteCookie(dataCookie);
+        const cachedManualStr = getHeyeteCookie(manualCookie); // ▼ 追加: 手動データのキャッシュを取得
+
         if (cachedDataStr) {
           try {
             const data = JSON.parse(cachedDataStr);
-            renderStatus(data);
+            // ▼ 追加: キャッシュがあればパースする
+            const manualData = cachedManualStr ? JSON.parse(cachedManualStr) : null; 
+            
+            // ▼ 修正: manualData も一緒に渡す
+            renderStatus(data, manualData); 
             return; 
           } catch(e) {
             console.error('キャッシュデータのパースに失敗しました', e);
           }
         }
+      }
+    }
+
+    try {
+      const rawUrl = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/status.json';
+      const manualUrl = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/manual_status.json'; 
+      const timestamp = new Date().getTime();
+
+      // 並行して両方のファイルを取得する
+      const [statusRes, manualRes] = await Promise.all([
+        fetch(`${rawUrl}?t=${timestamp}`),
+        fetch(`${manualUrl}?t=${timestamp}`).catch(() => null)
+      ]);
+
+      if (!statusRes.ok) throw new Error('Network response was not ok');
+      const data = await statusRes.json();
+
+      // 手動データの読み込み
+      let manualData = null;
+      if (manualRes && manualRes.ok) {
+        manualData = await manualRes.json();
+      }
+
+      setHeyeteCookie(timeCookie, now.toString(), 60);
+      setHeyeteCookie(dataCookie, JSON.stringify(data), 60);
+      
+      // ▼ 追加: 手動データもCookieに保存する ▼
+      if (manualData) {
+        setHeyeteCookie(manualCookie, JSON.stringify(manualData), 60);
+      } else {
+        // nullの場合（取得失敗など）は古いキャッシュを削除
+        setHeyeteCookie(manualCookie, "", 0); 
+      }
+
+      renderStatus(data, manualData);
+    } catch (error) {
+      const loadingEl = document.getElementById('loading');
+      if (loadingEl) {
+        loadingEl.innerHTML = '<p class="error-text">⚠️ ステータス情報の取得に失敗しました。</p>';
+      }
+      console.error(error);
+    }
+  }
       }
     }
 
