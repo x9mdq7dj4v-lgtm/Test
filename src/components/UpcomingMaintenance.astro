@@ -32,7 +32,8 @@
       const data = await res.json();
 
       const now = new Date().getTime();
-      const oneWeekLater = now + (7 * 24 * 60 * 60 * 1000); // 現在から7日後
+      const oneWeekLater = now + (7 * 24 * 60 * 60 * 1000);
+      // 現在から7日後
 
       // まだ終了しておらず、かつ1週間以内に開始されるものをフィルタリング
       const upcoming = data.filter((m: any) => {
@@ -40,12 +41,16 @@
         const end = new Date(m.endAt).getTime();
         return end > now && start <= oneWeekLater;
       });
-
       // 日付の近い順にソート
       upcoming.sort((a: any, b: any) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
 
       if (upcoming.length === 0) {
-        container.innerHTML = '<p class="empty-text">近日中に行われるメンテナンスはありません。</p>';
+        // ▼ フワッと切り替えるための処理 ▼
+        container.style.opacity = '0';
+        setTimeout(() => {
+          container.innerHTML = '<p class="empty-text">近日中に行われるメンテナンスはありません。</p>';
+          container.style.opacity = '1';
+        }, 200);
         return;
       }
 
@@ -63,11 +68,21 @@
         `;
       });
       html += '</ul>';
-      container.innerHTML = html;
+
+      // ▼ データをリストに反映する際もフワッと切り替える ▼
+      container.style.opacity = '0';
+      setTimeout(() => {
+        container.innerHTML = html;
+        container.style.opacity = '1';
+      }, 200);
 
     } catch (error) {
       console.error('メンテナンス情報の取得に失敗:', error);
-      container.innerHTML = '<p class="error-text">情報の取得に失敗しました。</p>';
+      container.style.opacity = '0';
+      setTimeout(() => {
+        container.innerHTML = '<p class="error-text">情報の取得に失敗しました。</p>';
+        container.style.opacity = '1';
+      }, 200);
     }
   }
 
@@ -103,6 +118,12 @@
   }
   #maintenance-content {
     padding: 1.5rem;
+    /* ▼ カクつきを防ぎ、アニメーションを有効にする魔法 ▼ */
+    min-height: 120px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: opacity 0.3s ease; 
   }
   .empty-text, .loading-mini, .error-text {
     color: #64748b;
