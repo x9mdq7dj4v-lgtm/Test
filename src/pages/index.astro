@@ -202,6 +202,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
     `;
 
+    
     if (data.api_services && data.api_services.length > 0) {
       html += generateServiceGroupHTML('APIサービス', data.api_services, manualData);
     }
