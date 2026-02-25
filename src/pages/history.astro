@@ -1,0 +1,258 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="メンテナンス履歴・予定 - Heyete System Status">
+  <div class="status-wrapper">
+    <div class="header-nav">
+      <a href="/" class="back-link">&larr; 現在のステータスに戻る</a>
+      <h2>メンテナンス履歴・予定</h2>
+    </div>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>情報を読み込み中...</p>
+    </div>
+
+    <div id="scheduled-container" class="history-section" style="display: none;">
+      <h3 class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        今後のメンテナンス予定
+      </h3>
+      <div id="scheduled-content" class="history-card"></div>
+    </div>
+
+    <div id="past-container" class="history-section" style="display: none;">
+      <h3 class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        過去のメンテナンス履歴
+      </h3>
+      <div id="past-content" class="history-card"></div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  async function fetchHistory() {
+    const scheduledContainer = document.getElementById('scheduled-container')!;
+    const scheduledContent = document.getElementById('scheduled-content')!;
+    const pastContainer = document.getElementById('past-container')!;
+    const pastContent = document.getElementById('past-content')!;
+    const loading = document.getElementById('loading')!;
+
+    try {
+      // JSONURLはご自身の環境に合わせて適宜変更してください
+      const url = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/maintenance_info.json';
+      const timestamp = new Date().getTime();
+      const res = await fetch(`${url}?t=${timestamp}`);
+      
+      if (!res.ok) throw new Error('Network response was not ok');
+      const data = await res.json();
+      const now = new Date().getTime();
+
+      // 「予定」と「過去」に振り分ける（終了時間が現在より未来か過去かで判定）
+      const scheduled = data.filter((m: any) => new Date(m.endAt).getTime() > now);
+      const past = data.filter((m: any) => new Date(m.endAt).getTime() <= now);
+
+      // 予定は「直近のものが上（昇順）」、過去は「新しいものが上（降順）」にソート
+      scheduled.sort((a: any, b: any) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+      past.sort((a: any, b: any) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
+
+      // HTML生成関数
+      const generateListHTML = (items: any[], emptyMessage: string) => {
+        if (items.length === 0) {
+          return `<p class="empty-text">${emptyMessage}</p>`;
+        }
+        let html = '<ul class="maint-list">';
+        items.forEach((m: any) => {
+          const startStr = new Date(m.startAt).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          const endStr = new Date(m.endAt).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          const statusBadge = new Date(m.endAt).getTime() <= now 
+            ? '<span class="badge badge-completed">完了</span>' 
+            : '<span class="badge badge-scheduled">予定</span>';
+
+          html += `
+            <li class="maint-item">
+              <div class="maint-header">
+                <span class="maint-time">${startStr} 〜 ${endStr}</span>
+                ${statusBadge}
+              </div>
+              <div class="maint-title">${m.title}</div>
+              <div class="maint-desc">${m.description}</div>
+            </li>
+          `;
+        });
+        html += '</ul>';
+        return html;
+      };
+
+      scheduledContent.innerHTML = generateListHTML(scheduled, "現在、予定されているメンテナンスはありません。");
+      pastContent.innerHTML = generateListHTML(past, "過去のメンテナンス履歴はありません。");
+
+      // ▼ UXを高めるアニメーション（フワッと順番に表示） ▼
+      [scheduledContainer, pastContainer].forEach(el => {
+        el.style.display = 'block';
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(15px)';
+        el.style.transition = 'opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1)';
+      });
+
+      loading.style.transition = 'opacity 0.3s ease';
+      loading.style.opacity = '0';
+      
+      setTimeout(() => {
+        loading.style.display = 'none';
+        
+        requestAnimationFrame(() => {
+          scheduledContainer.style.opacity = '1';
+          scheduledContainer.style.transform = 'translateY(0)';
+          
+          setTimeout(() => {
+            pastContainer.style.opacity = '1';
+            pastContainer.style.transform = 'translateY(0)';
+          }, 150); // 少し遅れて過去の履歴を表示
+        });
+      }, 300);
+
+    } catch (error) {
+      console.error('情報の取得に失敗:', error);
+      loading.innerHTML = '<p class="error-text">⚠️ 情報の取得に失敗しました。</p>';
+    }
+  }
+
+  fetchHistory();
+</script>
+
+<style>
+  .status-wrapper {
+    max-width: 800px;
+    margin: 2rem auto;
+  }
+  
+  .header-nav {
+    margin-bottom: 2rem;
+  }
+  .back-link {
+    display: inline-block;
+    color: #2563eb;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    transition: color 0.2s;
+  }
+  .back-link:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+  }
+  .header-nav h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #1e293b;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 4rem 0;
+    color: #64748b;
+  }
+  .spinner {
+    width: 30px; height: 30px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #64748b;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem auto;
+  }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+
+  .history-section {
+    margin-bottom: 3rem;
+  }
+  .section-title {
+    font-size: 1.15rem;
+    color: #334155;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 0.5rem;
+  }
+  .icon {
+    width: 22px;
+    height: 22px;
+    color: #64748b;
+  }
+
+  .history-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid #eaeaea;
+    padding: 1.5rem;
+  }
+
+  .empty-text {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin: 0;
+    text-align: center;
+    padding: 2rem 0;
+  }
+
+  .maint-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .maint-item {
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px dashed #e2e8f0;
+  }
+  .maint-item:last-child {
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-bottom: none;
+  }
+  
+  .maint-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+  }
+  .maint-time {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #475569;
+  }
+  
+  .badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+  }
+  .badge-scheduled {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+  }
+  .badge-completed {
+    background-color: #f1f5f9;
+    color: #475569;
+  }
+
+  .maint-title {
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: #1e293b;
+    margin-bottom: 0.4rem;
+  }
+  .maint-desc {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.6;
+  }
+  .error-text { color: #ef4444; }
+</style>
