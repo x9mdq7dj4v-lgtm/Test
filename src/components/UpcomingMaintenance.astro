@@ -18,6 +18,22 @@
 </div>
 
 <script>
+
+function escapeHTML(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/[&'`"<>]/g, function(match) {
+    return {
+      '&': '&amp;',
+      "'": '&#x27;',
+      '`': '&#x60;',
+      '"': '&quot;',
+      '<': '&lt;',
+      '>': '&gt;',
+    }[match];
+  });
+}
+
+
   async function fetchUpcomingMaintenance() {
     const container = document.getElementById('maintenance-content');
     if (!container) return;
@@ -56,17 +72,17 @@
 
       let html = '<ul class="maint-list">';
       upcoming.forEach((m: any) => {
-        const startStr = new Date(m.startAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        const endStr = new Date(m.endAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        
-        html += `
-          <li class="maint-item">
-            <div class="maint-time">${startStr} 〜 ${endStr}</div>
-            <div class="maint-title">${m.title}</div>
-            <div class="maint-desc">${m.description}</div>
-          </li>
-        `;
-      });
+  const startStr = new Date(m.startAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const endStr = new Date(m.endAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  
+  html += `
+    <li class="maint-item">
+      <div class="maint-time">${startStr} 〜 ${endStr}</div>
+      <div class="maint-title">${escapeHTML(m.title)}</div>
+      <div class="maint-desc">${escapeHTML(m.description)}</div>
+    </li>
+  `;
+});
       html += '</ul>';
 
       // ▼ データをリストに反映する際もフワッと切り替える ▼
