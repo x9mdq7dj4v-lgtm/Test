@@ -19,6 +19,7 @@ import Layout from '../layouts/Layout.astro';
     warn: `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
     down: `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
     unknown: `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
+    maintenance: `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>`
   };
 
   function setHeyeteCookie(name: string, value: string, maxAgeSeconds: number) {
@@ -57,14 +58,30 @@ import Layout from '../layouts/Layout.astro';
 
     try {
       const rawUrl = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/status.json';
-      const response = await fetch(`${rawUrl}?t=${new Date().getTime()}`);
-      if (!response.ok) throw new Error('Network response was not ok');
-      const data = await response.json();
+      // ▼ 追加: 手動設定ファイルのURL ▼
+      const manualUrl = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/manual_status.json'; 
+      const timestamp = new Date().getTime();
+
+      // 並行して両方のファイルを取得する
+      const [statusRes, manualRes] = await Promise.all([
+        fetch(`${rawUrl}?t=${timestamp}`),
+        fetch(`${manualUrl}?t=${timestamp}`).catch(() => null) // 手動ファイルが無い場合のエラー回避
+      ]);
+
+      if (!statusRes.ok) throw new Error('Network response was not ok');
+      const data = await statusRes.json();
+
+      // 手動データの読み込み
+      let manualData = null;
+      if (manualRes && manualRes.ok) {
+        manualData = await manualRes.json();
+      }
 
       setHeyeteCookie(timeCookie, now.toString(), 60);
       setHeyeteCookie(dataCookie, JSON.stringify(data), 60);
+      // 今回は manualData はキャッシュせず常に最新を見に行くか、表示時のみ結合させます
 
-      renderStatus(data);
+      renderStatus(data, manualData); // 引数を追加
     } catch (error) {
       const loadingEl = document.getElementById('loading');
       if (loadingEl) {
@@ -118,24 +135,47 @@ import Layout from '../layouts/Layout.astro';
     return html;
   }
 
-  function renderStatus(data: any) {
+  function renderStatus(data: any, manualData: any = null) {
     const container = document.getElementById('status-content')!;
     const loading = document.getElementById('loading')!;
     
+    // 基本ステータス（自動検知）
     const isAllOk = data.system_status === 'all_systems_operational';
-    const overallClass = isAllOk ? 'banner-ok' : 'banner-warning';
-    const overallText = isAllOk ? 'すべてのシステムが正常に稼働しています' : '一部のシステムに問題が発生しています';
-    const overallIcon = isAllOk ? icons.ok : icons.warn;
-    
+    let overallClass = isAllOk ? 'banner-ok' : 'banner-warning';
+    let overallTitle = isAllOk ? 'すべてのシステムが正常に稼働しています' : '一部のシステムに問題が発生しています';
+    let overallIcon = isAllOk ? icons.ok : icons.warn;
+    let descriptionHTML = ''; // 詳細テキスト用
+
+    // ▼ フラグの上書きロジック（優先度：メンテ > 手動障害 > 自動） ▼
+    if (manualData) {
+      if (manualData.maintenance?.active) {
+        overallClass = 'banner-maintenance';
+        overallTitle = manualData.maintenance.title || 'システムメンテナンス中です';
+        overallIcon = icons.maintenance;
+        if (manualData.maintenance.description) {
+          descriptionHTML = `<p class="banner-desc">${manualData.maintenance.description}</p>`;
+        }
+      } else if (manualData.incident?.active) {
+        overallClass = 'banner-down';
+        overallTitle = manualData.incident.title || 'システム障害が発生しています';
+        overallIcon = icons.down;
+        if (manualData.incident.description) {
+          descriptionHTML = `<p class="banner-desc">${manualData.incident.description}</p>`;
+        }
+      }
+    }
+
     const updatedAt = new Date(data.last_updated).toLocaleString('ja-JP', {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
+    // ▼ 描画内容を更新 ▼
     let html = `
       <div class="overall-banner ${overallClass}">
         <div class="banner-icon">${overallIcon}</div>
         <div class="banner-text">
-          <h2>${overallText}</h2>
+          <h2>${overallTitle}</h2>
+          ${descriptionHTML}
           <p class="update-time">最終更新: ${updatedAt}</p>
         </div>
       </div>
@@ -158,13 +198,13 @@ import Layout from '../layouts/Layout.astro';
 </script>
 
 <style is:global>
-  /* 全体レイアウト */
+
   .status-wrapper {
     max-width: 800px;
     margin: 2rem auto;
   }
 
-  /* ローディング */
+
   .loading {
     text-align: center;
     padding: 4rem 0;
@@ -180,7 +220,7 @@ import Layout from '../layouts/Layout.astro';
   }
   @keyframes spin { 100% { transform: rotate(360deg); } }
 
-  /* 全体バナー */
+
   .overall-banner {
     display: flex;
     align-items: center;
@@ -215,7 +255,7 @@ import Layout from '../layouts/Layout.astro';
     color: #666;
   }
 
-  /* サービスグループとリスト（隙間と見やすさを確保） */
+
   .service-group {
     margin-bottom: 2.5rem;
   }
@@ -238,7 +278,7 @@ import Layout from '../layouts/Layout.astro';
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.2rem 1.5rem; /* しっかり隙間をとる */
+    padding: 1.2rem 1.5rem; 
     border-bottom: 1px solid #eaeaea;
   }
   .service-row:last-child {
@@ -249,7 +289,7 @@ import Layout from '../layouts/Layout.astro';
     font-size: 1rem;
   }
 
-  /* ステータスバッジと応答速度 */
+
   .service-details {
     display: flex;
     align-items: center;
@@ -278,7 +318,26 @@ import Layout from '../layouts/Layout.astro';
     height: 16px;
   }
 
-  /* ステータスごとの色分け */
+  .banner-maintenance {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+  }
+  .banner-maintenance .banner-icon svg { color: #2563eb; }
+  
+  .banner-down {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+  }
+  .banner-down .banner-icon svg { color: #dc2626; }
+
+  .banner-desc {
+    font-size: 0.95rem;
+    color: #4b5563;
+    margin: 0.5rem 0 0.8rem 0;
+    line-height: 1.4;
+  }
+
+
   .status-ok { background: #f0fdf4; color: #16a34a; }
   .status-warn { background: #fefce8; color: #ca8a04; }
   .status-down { background: #fef2f2; color: #dc2626; }
