@@ -1,6 +1,6 @@
 {
   "maintenance": {
-    "active": true,
+    "active": false,
     "title": "定期メンテナンスのお知らせ",
     "id": ["bbs", "web-top"], 
     "description": "現在、システムメンテナンスを実施しています。終了予定時刻は15:00です。"
