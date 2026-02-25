@@ -1,7 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
-
 ---
 
 <Layout title="Heyete System Status">
@@ -10,12 +9,20 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
       <div class="spinner"></div>
       <p>システムステータスを確認中...</p>
     </div>
-    <div id="status-content" style="display: none;"></div>
+    
+    <div id="banner-container" style="display: none;"></div>
+
+    <div id="maintenance-container" style="display: none;">
+      <UpcomingMaintenance />
+    </div>
+
+    <div id="services-container" style="display: none;"></div>
+    
   </div>
 </Layout>
 
 <script>
-  // SVGアイコンの定義
+
   const icons = {
     ok: `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
     warn: `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
@@ -39,7 +46,7 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
   async function loadStatus() {
     const timeCookie = 'h_for-now-lol';
     const dataCookie = 'h_provisional-lol';
-    const manualCookie = 'h_manual-lol'; // ▼ 追加: 手動データ用のCookieキー
+    const manualCookie = 'h_manual-lol'; 
     const now = Date.now();
 
     const cachedTimeStr = getHeyeteCookie(timeCookie);
@@ -47,15 +54,13 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
       const cachedTime = parseInt(cachedTimeStr, 10);
       if (now - cachedTime < 30000) {
         const cachedDataStr = getHeyeteCookie(dataCookie);
-        const cachedManualStr = getHeyeteCookie(manualCookie); // ▼ 追加: 手動データのキャッシュを取得
+        const cachedManualStr = getHeyeteCookie(manualCookie);
 
         if (cachedDataStr) {
           try {
             const data = JSON.parse(cachedDataStr);
-            // ▼ 追加: キャッシュがあればパースする
             const manualData = cachedManualStr ? JSON.parse(cachedManualStr) : null; 
             
-            // ▼ 修正: manualData も一緒に渡す
             renderStatus(data, manualData);
             return; 
           } catch(e) {
@@ -70,16 +75,13 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
       const manualUrl = 'https://raw.githubusercontent.com/x9mdq7dj4v-lgtm/Test/main/manual_status.json'; 
       const timestamp = new Date().getTime();
 
-      // 並行して両方のファイルを取得する
       const [statusRes, manualRes] = await Promise.all([
         fetch(`${rawUrl}?t=${timestamp}`),
         fetch(`${manualUrl}?t=${timestamp}`).catch(() => null)
       ]);
-      
       if (!statusRes.ok) throw new Error('Network response was not ok');
       const data = await statusRes.json();
       
-      // 手動データの読み込み
       let manualData = null;
       if (manualRes && manualRes.ok) {
         manualData = await manualRes.json();
@@ -88,11 +90,9 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
       setHeyeteCookie(timeCookie, now.toString(), 60);
       setHeyeteCookie(dataCookie, JSON.stringify(data), 60);
       
-      // ▼ 追加: 手動データもCookieに保存する ▼
       if (manualData) {
         setHeyeteCookie(manualCookie, JSON.stringify(manualData), 60);
       } else {
-        // nullの場合（取得失敗など）は古いキャッシュを削除
         setHeyeteCookie(manualCookie, "", 0);
       }
 
@@ -106,21 +106,18 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
     }
   }
 
-  // ▼ 引数に manualData を追加 ▼
   function generateServiceGroupHTML(title: string, services: any[], manualData: any = null) {
     let html = `
       <div class="service-group">
         <h3 class="group-title">${title}</h3>
         <div class="service-list">
     `;
-    
     services.forEach((service: any) => {
       let icon = icons.ok;
       let statusText = '稼働中';
       let statusColor = 'status-ok';
       let latencyText = `${service.latency_ms || 0} ms`;
 
-      // ▼ 手動フラグの上書き判定 ▼
       const isMaintenance = manualData?.maintenance?.active && 
         (manualData.maintenance.id?.includes('all') || manualData.maintenance.id?.includes(service.id));
         
@@ -128,17 +125,16 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
         (manualData.incident.id?.includes('all') || manualData.incident.id?.includes(service.id));
 
       if (isMaintenance) {
-        icon = icons.maintenance; // 先ほど追加したアイコン
+        icon = icons.maintenance; 
         statusText = 'メンテ中';
         statusColor = 'status-maintenance';
-        latencyText = '-'; // メンテ中はレイテンシを隠す
+        latencyText = '-'; 
       } else if (isIncident) {
         icon = icons.down;
         statusText = '障害中';
         statusColor = 'status-down';
       } 
       else {
-        // ▼ 自動検知（status.json）の判定（通常時） ▼
         if (service.status === 'degraded') {
           icon = icons.warn;
           statusText = '警告・遅延';
@@ -172,18 +168,21 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
     return html;
   }
 
+
   function renderStatus(data: any, manualData: any = null) {
-    const container = document.getElementById('status-content')!;
+    const bannerContainer = document.getElementById('banner-container')!;
+    const maintenanceContainer = document.getElementById('maintenance-container')!;
+    const servicesContainer = document.getElementById('services-container')!;
     const loading = document.getElementById('loading')!;
     
-    // 基本ステータス（自動検知）
+
     const isAllOk = data.system_status === 'all_systems_operational';
     let overallClass = isAllOk ? 'banner-ok' : 'banner-warning';
     let overallTitle = isAllOk ? 'すべてのシステムが正常に稼働しています' : '一部のシステムに問題が発生しています';
     let overallIcon = isAllOk ? icons.ok : icons.warn;
-    let descriptionHTML = ''; // 詳細テキスト用
+    let descriptionHTML = ''; 
 
-    // ▼ フラグの上書きロジック（優先度：メンテ > 手動障害 > 自動） ▼
+
     if (manualData) {
       if (manualData.maintenance?.active) {
         overallClass = 'banner-maintenance';
@@ -206,8 +205,8 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
     
-    // ▼ 描画内容を更新 ▼
-    let html = `
+    // バナーのHTML
+    let bannerHtml = `
       <div class="overall-banner ${overallClass}">
         <div class="banner-icon">${overallIcon}</div>
         <div class="banner-text">
@@ -218,16 +217,24 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
       </div>
     `;
     
+
+    let servicesHtml = '';
     if (data.api_services && data.api_services.length > 0) {
-      html += generateServiceGroupHTML('APIサービス', data.api_services, manualData);
+      servicesHtml += generateServiceGroupHTML('APIサービス', data.api_services, manualData);
     }
     if (data.web_services && data.web_services.length > 0) {
-      html += generateServiceGroupHTML('Webサービス', data.web_services, manualData);
+      servicesHtml += generateServiceGroupHTML('Webサービス', data.web_services, manualData);
     }
 
-    container.innerHTML = html;
+
+    bannerContainer.innerHTML = bannerHtml;
+    servicesContainer.innerHTML = servicesHtml;
+    
+
     loading.style.display = 'none';
-    container.style.display = 'block';
+    bannerContainer.style.display = 'block';
+    maintenanceContainer.style.display = 'block'; // メンテコンポーネントの枠も表示
+    servicesContainer.style.display = 'block';
   }
 
   loadStatus();
@@ -325,7 +332,7 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
   .service-details {
     display: flex;
     align-items: center;
-    gap: 1.5rem; /* MSとアイコンの隙間 */
+    gap: 1.5rem; 
   }
   .latency {
     font-size: 0.9rem;
