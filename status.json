@@ -1,16 +1,16 @@
 {
-  "last_updated": "2026-03-10T14:30:10.431Z",
-  "system_status": "partial_outage",
+  "last_updated": "2026-03-10T14:35:44.946Z",
+  "system_status": "all_systems_operational",
   "api_services": [
     {
       "id": "bbs",
       "name": "24.anon API",
       "status": "operational",
-      "latency_ms": 352,
+      "latency_ms": 100,
       "details": {
         "success": true,
         "status": "ok",
-        "timestamp": 1773153000,
+        "timestamp": 1773153344,
         "dependencies": {
           "kv": "ok"
         }
@@ -21,10 +21,10 @@
       "id": "ruruna",
       "name": "Ruruna AI API",
       "status": "operational",
-      "latency_ms": 787,
+      "latency_ms": 69,
       "details": {
         "status": "ok",
-        "timestamp": 1773153001031,
+        "timestamp": 1773153344533,
         "dependencies": {
           "kv": "ok",
           "ai": "ok"
@@ -36,10 +36,10 @@
       "id": "support",
       "name": "サポートお問い合わせ API",
       "status": "operational",
-      "latency_ms": 717,
+      "latency_ms": 70,
       "details": {
         "status": "ok",
-        "timestamp": 1773153001775,
+        "timestamp": 1773153344559,
         "dependencies": {
           "kv": "ok",
           "resend": "ready"
@@ -51,10 +51,10 @@
       "id": "accounts",
       "name": "Heyeteアカウント API",
       "status": "operational",
-      "latency_ms": 725,
+      "latency_ms": 216,
       "details": {
         "status": "ok",
-        "timestamp": 1773152941632,
+        "timestamp": 1773153301687,
         "dependencies": {
           "db": "ok",
           "session_kv": "ok"
@@ -67,92 +67,92 @@
     {
       "id": "web-top",
       "name": "総合トップサイト",
-      "status": "down",
-      "latency_ms": 814,
-      "error": "fetch failed"
+      "status": "operational",
+      "latency_ms": 70,
+      "code": 200
     },
     {
       "id": "web-myaccounts",
       "name": "アカウントダッシュボード",
-      "status": "down",
-      "latency_ms": 652,
-      "error": "fetch failed"
+      "status": "operational",
+      "latency_ms": 58,
+      "code": 200
     },
     {
       "id": "web-accounts",
       "name": "Heyeteアカウントログイン等",
       "status": "operational",
-      "latency_ms": 257,
+      "latency_ms": 23,
       "code": 200
     },
     {
       "id": "web-ruruna",
       "name": "Ruruna AI",
       "status": "operational",
-      "latency_ms": 606,
+      "latency_ms": 56,
       "code": 200
     },
     {
       "id": "web-anon",
       "name": "24.anon",
       "status": "operational",
-      "latency_ms": 491,
+      "latency_ms": 67,
       "code": 200
     },
     {
       "id": "web-news",
       "name": "Heyete News",
       "status": "operational",
-      "latency_ms": 505,
+      "latency_ms": 34,
       "code": 200
     },
     {
       "id": "web-blog",
       "name": "Heyete Blog",
       "status": "operational",
-      "latency_ms": 1153,
+      "latency_ms": 101,
       "code": 200
     },
     {
       "id": "web-dev",
       "name": "Heyete Developer",
       "status": "operational",
-      "latency_ms": 1012,
+      "latency_ms": 68,
       "code": 200
     },
     {
       "id": "web-corp",
       "name": "コーポレートサイト",
       "status": "operational",
-      "latency_ms": 424,
+      "latency_ms": 46,
       "code": 200
     },
     {
       "id": "web-policies",
       "name": "規約とポリシー",
-      "status": "down",
-      "latency_ms": 473,
-      "error": "fetch failed"
+      "status": "operational",
+      "latency_ms": 33,
+      "code": 200
     },
     {
       "id": "web-support",
       "name": "サポートお問い合わせ",
       "status": "operational",
-      "latency_ms": 656,
+      "latency_ms": 49,
       "code": 200
     },
     {
       "id": "web-docs",
       "name": "資料サイト",
-      "status": "down",
-      "latency_ms": 266,
-      "error": "fetch failed"
+      "status": "operational",
+      "latency_ms": 166,
+      "code": 200
     },
     {
       "id": "web-anon-lite",
       "name": "24.anon 軽量版",
       "status": "operational",
-      "latency_ms": 752,
+      "latency_ms": 74,
       "code": 200
     }
   ]
