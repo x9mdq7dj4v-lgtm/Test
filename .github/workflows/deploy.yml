@@ -26,7 +26,9 @@ jobs:
 
       # ★package.json を元に Astro 本体をインストール
       - name: Install dependencies
-        run: npm install
+        run: |
+          rm -f package-lock.json
+          npm install
 
       # ★Astroのビルドコマンドを実行
       - name: Build with Astro
