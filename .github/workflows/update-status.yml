@@ -52,7 +52,7 @@ jobs:
             { id: 'web-dev', name: 'Heyete Developer', url: 'https://dev.heyete.com/test.html' },
             { id: 'web-corp', name: 'コーポレートサイト', url: 'https://corp.heyete.com/test.html' },
             { id: 'web-policies', name: '規約とポリシー', url: 'https://policies.heyete.com/test.html' },
-            { id: 'web-support', name: 'サポートお問い合わせ', url: 'https://support.heyete.com/test.html' },
+            { id: 'web-support', name: 'サポートお問い合わせ', url: 'https://support.heyete.com/test' },
             { id: 'web-docs', name: '資料サイト', url: 'https://docs.heyete.net/test.html' },
             { id: 'web-anon-lite', name: '24.anon 軽量版', url: 'https://anon.heyete.net/test.html' }
           ];

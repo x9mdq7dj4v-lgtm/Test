@@ -1,3 +1,4 @@
+//astro.config.mjs
 import { defineConfig } from 'astro/config';
 import fs from 'node:fs/promises';
 import path from 'node:path';
