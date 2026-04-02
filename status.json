@@ -1,22 +1,27 @@
 {
-  "last_updated": "2026-04-02T15:20:42.040Z",
+  "last_updated": "2026-04-02T15:31:43.654Z",
   "system_status": "partial_outage",
   "api_services": [
     {
       "id": "bbs",
       "name": "24.anon API",
-      "status": "down",
-      "latency_ms": 10002,
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 112,
+      "details": {
+        "success": true,
+        "status": "ok",
+        "timestamp": 1775143827
+      },
+      "code": 200
     },
     {
       "id": "ruruna",
       "name": "Ruruna AI API",
       "status": "operational",
-      "latency_ms": 178,
+      "latency_ms": 148,
       "details": {
         "status": "ok",
-        "timestamp": 1775143170872,
+        "timestamp": 1775143892629,
         "dependencies": {
           "kv": "ok",
           "ai": "ok"
@@ -28,107 +33,115 @@
       "id": "support",
       "name": "サポートお問い合わせ API",
       "status": "down",
-      "latency_ms": 10000,
+      "latency_ms": 10001,
       "error": "This operation was aborted"
     },
     {
       "id": "accounts",
       "name": "Heyeteアカウント API",
-      "status": "down",
-      "latency_ms": 6873,
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 245,
+      "details": {
+        "status": "ok",
+        "timestamp": 1775143838135,
+        "dependencies": {
+          "db": "ok",
+          "session_kv": "ok"
+        }
+      },
+      "code": 200
     }
   ],
   "web_services": [
     {
       "id": "web-top",
       "name": "総合トップサイト",
-      "status": "down",
-      "latency_ms": 10001,
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 166,
+      "code": 200
     },
     {
       "id": "web-myaccounts",
       "name": "アカウントダッシュボード",
       "status": "operational",
-      "latency_ms": 105,
+      "latency_ms": 110,
       "code": 200
     },
     {
       "id": "web-accounts",
       "name": "Heyeteアカウントログイン等",
       "status": "operational",
-      "latency_ms": 153,
+      "latency_ms": 60,
       "code": 200
     },
     {
       "id": "web-ruruna",
       "name": "Ruruna AI",
-      "status": "down",
-      "latency_ms": 6698,
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 82,
+      "code": 200
     },
     {
       "id": "web-anon",
       "name": "24.anon",
       "status": "operational",
-      "latency_ms": 3446,
+      "latency_ms": 87,
       "code": 200
     },
     {
       "id": "web-news",
       "name": "Heyete News",
       "status": "operational",
-      "latency_ms": 3374,
+      "latency_ms": 87,
       "code": 200
     },
     {
       "id": "web-blog",
       "name": "Heyete Blog",
-      "status": "down",
-      "latency_ms": 10000,
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 112,
+      "code": 200
     },
     {
       "id": "web-dev",
       "name": "Heyete Developer",
       "status": "operational",
-      "latency_ms": 3505,
+      "latency_ms": 158,
       "code": 200
     },
     {
       "id": "web-corp",
       "name": "コーポレートサイト",
-      "status": "down",
-      "latency_ms": 10000,
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 133,
+      "code": 200
     },
     {
       "id": "web-policies",
       "name": "規約とポリシー",
-      "status": "down",
-      "latency_ms": 10000,
-      "error": "This operation was aborted"
+      "status": "operational",
+      "latency_ms": 144,
+      "code": 200
     },
     {
       "id": "web-support",
       "name": "サポートお問い合わせ",
       "status": "operational",
-      "latency_ms": 3375,
+      "latency_ms": 85,
       "code": 200
     },
     {
       "id": "web-docs",
       "name": "資料サイト",
       "status": "operational",
-      "latency_ms": 230,
+      "latency_ms": 148,
       "code": 200
     },
     {
       "id": "web-anon-lite",
       "name": "24.anon 軽量版",
       "status": "operational",
-      "latency_ms": 3411,
+      "latency_ms": 163,
       "code": 200
     }
   ]
