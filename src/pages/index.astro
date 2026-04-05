@@ -87,8 +87,8 @@ import UpcomingMaintenance from '../components/UpcomingMaintenance.astro';
     }
 
     try {
-      const rawUrl = 'https://raw.githubusercontent.com/hay0812/Test/main/status.json';
-      const manualUrl = 'https://raw.githubusercontent.com/hay0812/Test/main/manual_status.json'; 
+      const rawUrl = 'https://raw.githubusercontent.com/hay0812/system-status-heyete/main/status.json';
+      const manualUrl = 'https://raw.githubusercontent.com/hay0812/system-status-heyete/main/manual_status.json'; 
       const timestamp = new Date().getTime();
 
       const [statusRes, manualRes] = await Promise.all([
