@@ -2,9 +2,9 @@ name: Deploy Astro to GitHub Pages
 
 on:
   push:
-    branches: [ main ] # ご自身のブランチ名に合わせてください（masterの場合は書き換え）
+    branches: [ main ]
     paths-ignore:
-      - 'status.json' # status.jsonの更新では再ビルドしない
+      - 'status.json'
   workflow_dispatch:
 
 permissions:
@@ -13,39 +13,22 @@ permissions:
   id-token: write
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      # ★package.json を元に Astro 本体をインストール
-      - name: Install dependencies
-        run: |
-          rm -f package-lock.json
-          npm install
-
-      # ★Astroのビルドコマンドを実行
-      - name: Build with Astro
-        run: npm run build
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist # AstroがHTMLを書き出すデフォルトのフォルダ
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
